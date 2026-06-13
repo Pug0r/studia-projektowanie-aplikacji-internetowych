@@ -76,3 +76,24 @@ Wybor Blazora na frontend pozwoli niewielkiemu zespolowi programistycznemu porus
 - blazor w trybie webassembly wymaga pobrania dosc duzego pliku startowego, co potencjalnie sprawi ze pierwsze zaladowanie strony bedzie wolniejsze niz gdyby uzyc frameworka JSowego
 - blazor nie ma tak mocnej spolecznosci jak React/Angular/Vue, wiec ilosc gotowych komponentow i rozwiazan za pewne bedzie nieco mniejsza
 - gdyby sie okazalo ze konieczna jest integracja z bibliotekami javascriptowymi, to moze sie ona okazac bardzo bolesna
+
+## ADR 04 - Autentykacja
+
+### <ins>1. Decyzja</ins>
+**JWT**
+
+### 2. Kontekst
+Aplikacja musi umozliwiac zalozenie konta, a wiec potrzebujemy mechanizmu autentykacji ktory umozliwi bezpieczny dostep uzytkownikow do ich kont.
+
+### 3. Alternatywy
+- Session - mechanizm wymaga trzymania stanu po stronie serwera
+- OAuth - znacznie bardziej skomplikowany w konfiguracji, wymaga integracji z zewnetrzynmi providerami
+
+### 4. Uzasadnienie
+Wybor JWT wynika z prostoty implementacji, bezstanowej obslugi oraz wbudowanej obslugi w .net, ktory jest uzyty jako backend aplikacji. Token jest latwy w obsludze zarowno od strony backendu (generujemy, podpisujemy) jak i frontu (dolaczamy do zapytania), szczegolnie w zestawieniu z mechanizmem sesji lub oauthem. Po stronie backendu calosc potrzebnych informacji do ochrony zasoobw mamy juz w tokenie, a po stronie klienta nie musimy przechodzic przez autentykacje z zewnetrznym dostawca.
+
+### 5. Tradeoffy
+- trudnosc w obsludze uniewaznienia tokenu w przypadku wylogowania usera
+- niektorzy klienci mogliby oczekiwac OAutha tzn. mozliwosci zalogowania poprzez Facebooka/Google etc.
+
+
