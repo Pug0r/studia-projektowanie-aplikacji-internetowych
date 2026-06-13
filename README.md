@@ -96,4 +96,39 @@ Wybor JWT wynika z prostoty implementacji, bezstanowej obslugi oraz wbudowanej o
 - trudnosc w obsludze uniewaznienia tokenu w przypadku wylogowania usera
 - niektorzy klienci mogliby oczekiwac OAutha tzn. mozliwosci zalogowania poprzez Facebooka/Google etc.
 
+## ADR 05 - API Backendowe
 
+### <ins>1. Decyzja</ins>
+**Rest API**
+
+### 2. Kontekst
+Trzeba zadecydowac w jaki sposob aplikacja kliencka bedzie sie porozumiewala z serwerem. Do wyboru mamy API Restowe, gRPC albo graphQL. Aplikacja ma stosunkowo niewiele widokow, gdzie glowny, najwazniejszy widok (przegladarka perfum) bedzie wolany zdecydowanie najczesciej. 
+
+### 3. Alternatywy
+- gRPC - silnie typowany i (np. w polaczeniu z proto) szybszy niz REST, ulatwia prace przy mieszanych technologiach. Wymusza jednak tworzenie kontraktu i generacje klientow przez co jest skomplkowany w obsludze. Przy Blazor+.net oraz niewielkiej aplikacji ecommerce to zdecydowany overkill
+- GraphQL - ciekawa alternatywa, pomaga rozwiazac problem overfetchingu, natomiast ma dosc wysoki prog wejscia, wymaga szerokiej integracji na backendzie. Skomplikowana (w porownaniu do RESTa) struktura zapytan zwieksza prawdopodobienstwo bledu.
+
+### 4. Uzasadnienie
+Standardowe API RESTowe jest najprostsze w implementacji i utrzymaniu. Nie ma potrzeby wprowadzania dodatkowej kontroli typow ze wzgledu na uzycie Blazora jako frontendu, co dyskwalifikuje uzycie gRPC. Aplikacja bedzie w znacznej mierze uzywala 2-3 endpointow RESTowych (do glownego widoku perfum oraz do widoku ofert konkretnej sztuki) co pozwoli na sprawne napisanie dedykowanych endpointow. W razie potrzeby, przy odpowiednio napisanych kilku endpointach, mozna bardzo latwo pokierowac agenta AI do napisania kolejnych analogicznych endpointow, co sprawia ze tworzenie dedykowanych endpointow bez zlozonej logiki dla konkretnych widokow jest bardzo wydajne, wiec uzycie GraphQLa do tego typu nieskomplikowanej aplikacji wydaje sie nieuzasadnione.
+
+### 5. Tradeoffy
+- nizsza wydajnosc endpointow niz w przypadku streamownia poprzez gRPC
+- potrzeba dokladnego przemyslenia i zaprojektowania endpointow 
+
+## ADR 06 - ORM 
+
+### <ins>1. Decyzja</ins>
+**Entity Framework**
+
+### 2. Kontekst
+Aplikacja musi korzystac z bazy danych, a do komunikacji backendu z baza potrzebny bedzie ORM lub chociaz microORM.
+
+### 3. Alternatywy
+- Dapper - microORM, wymaga wlasnorecznego pisania zapytan SQLowych, zajmuje sie jedynie mapowaniem z SQLa na obiekty C#. To dobry wybor dla projektow wymagajacych wysokiej kontroli nad zapytaniami, pozwala na dokladna kontrole nad wykonywana kwerenda. Jednak przez to nie robi sporo rzeczy ktore zapewnia nam EF.
+
+### 4. Uzasadnienie
+Entity Framework to standard branzowy, pozwalajacy na szybkie osiagniecie wysokiej produktywnosci, w zasadzie bez patrzenia na SQLa. Zapewnia integracje z kazda popularna technologia bazodanowa. Zapewnia mechanizm migracji typu "Code First" co pozwala na przeprowadzanie migracji poprzez definiowanie obiektow bezposrednio z poziomu C#. W przypadku tej aplikacji, ryzyko zwiazane z Entiy Frameworkiem (problemy z konfiguracja przy skomplikowanych zapytaniach) wydaja sie ograniczone do minimum, bo nie przewiduje skomplikowanej logiki biznesowej.
+
+### 5. Tradeoffy
+- EF tworzy warste abstrakcji, ktora co prawda zwieksza produtkywnosc, szczegolnie poczatkowo, to jednak wraz z rozwojem aplikacji potrafi zamienic sie w zrodlo problemow i magii
+- stosunkowo latwo, w przypadku bardziej zlozonych zapytan, o natrafienie na problem N+1
