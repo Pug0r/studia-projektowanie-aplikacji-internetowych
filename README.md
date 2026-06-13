@@ -37,7 +37,7 @@ W obrebie aplikacji funkcjonuja jedynie dobrze zdefiniowane encje o konkretnych 
 - wymusza uzycie ORMa zamiast odczytywania gotowych obiektow
 
 
-## ADR 02 - Baza danych
+## ADR 02 - Baza danych - technologia
 
 ### 1. Decyzja
 **PostgreSQL**
@@ -55,3 +55,24 @@ Postgres jest darmowy, w pelni open-source i jest de facto standardem. Poradzi s
 ### 5. Tradeoffy
 - trzeba stawiac osobny serwer (kontener) zamiast pojedynczego pliku jak w sqlite
 - potencjalny overkill, wieksze zuzycie zasobow niz sqlite
+
+## ADR 03 - Frontend
+
+### <ins>1. Decyzja</ins>
+**Blazor WebAssembly**
+
+### 2. Kontekst
+Aplikacja wymaga interaktywnego interfejsu uzytkownika, ktory bedzie komunikowal sie z backendem poprzez API Restowe lub grpc. Potrzebuje wybrac technologie ktora maksymalnie ulatwi komunikacje z backendem i zmaksymalizuje produktywnosc zespolu programistycznego (czytaj: moja).
+
+### 3. Alternatywy
+- React - chyba najbardziej oczywisty wybor, jednak moja niechec do JavaScriptu sprawia ze jesli jest alternatywa, to wole sie jej trzymac. Z nieco mniej osobistych powodow: wybor dowolnego frameworka JSowego wymuszalby context switching przy pracy nad frontem vs. backendem oraz generowania kontratkow do typowania
+- Angular - to samo co wyzej, ale prog wejscia jest znancznie wyzszy
+- Vue - znacznie prostszy, ale dalej jest to javascript
+
+### 4. Uzasadnienie
+Wybor Blazora na frontend pozwoli niewielkiemu zespolowi programistycznemu poruszac sie w obrebie jednego jezyka, co zdecydowanie pozytywnie wplynie na produktywnosc. Pozwoli to na utworzenie projektu zarowno dla frontu jak i backendu z DTOsami, co rozwiaze problem typowania i walidacji obiektow. Projekt aplikacji nie zaklada wspoldzielenia jej fragmentow w innych miejscach, wiec nie ma potrzeby tworzenia reuzywalnych komponentow. Nie przewiduje sie potrzeby integracji z bibliotekami JSowymi (co jest poprzez Blazora mozliwe, ale dosc karkolomne)
+
+### 5. Tradeoffy
+- blazor w trybie webassembly wymaga pobrania dosc duzego pliku startowego, co potencjalnie sprawi ze pierwsze zaladowanie strony bedzie wolniejsze niz gdyby uzyc frameworka JSowego
+- blazor nie ma tak mocnej spolecznosci jak React/Angular/Vue, wiec ilosc gotowych komponentow i rozwiazan za pewne bedzie nieco mniejsza
+- gdyby sie okazalo ze konieczna jest integracja z bibliotekami javascriptowymi, to moze sie ona okazac bardzo bolesna
