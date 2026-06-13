@@ -32,6 +32,26 @@ Aplikacja wymaga bazy danych do persystencji danych. Do rozważenia mamy bazy re
 W obrebie aplikacji funkcjonuja jedynie dobrze zdefiniowane encje o konkretnych wartosciach - z gory wiemy jakie wlasnosci bedzie mial user, jakie perfum. Relacje miedzy tymi encjami nie beda ulegaly zmianom i sa latwe do przewidzenia. Dodatkowo, skoro aplikacja ma byc ecommercem, to musimy zapewnic transakcyjnosc, a to jest cos z czym bazy nosql nie radza sobie najlepiej. Zasadniczo zadne z zalet baz nosql nie beda tu mialy wiekszego zastosowania (ewolucja schematu, skalowalnosc, obiektowosc)
 
 ### 5. Tradeoffy
-- utrudniona ewolucja schematu 
-- gorsze skalowanie w przypadku 
+- utrudniona ewolucja schematu, wymusza migracje
+- gorsze skalowanie 
 - wymusza uzycie ORMa zamiast odczytywania gotowych obiektow
+
+
+## ADR 02 - Baza danych
+
+### 1. Decyzja
+**PostgreSQL**
+
+### 2. Kontekst
+Po zadecydowaniu ze uzyta zostanie relacyjna baza danych, balezy zdecydowac sie na konkretna baze.
+
+### 3. Alternatywy
+- SQLite - nie nadaje sie do zastosowan gdzie uzytkownikow jest wielu i zapisy nie sa rzadkoscia, ze wzgledu na lockowanie calosci bazy przy zapisie
+- Microsoft SQL Server - rozwiazanie closed source, bardzo drogie licencje
+
+### 4. Uzasadnienie
+Postgres jest darmowy, w pelni open-source i jest de facto standardem. Poradzi sobie z dowolna skala ktora jest przewidziana dla tego typu aplikacji. Ma integracje z Entity Frameworkiem. Jest latwo dostepny do hostowania u providerow chmury.
+
+### 5. Tradeoffy
+- trzeba stawiac osobny serwer (kontener) zamiast pojedynczego pliku jak w sqlite
+- potencjalny overkill, wieksze zuzycie zasobow niz sqlite
