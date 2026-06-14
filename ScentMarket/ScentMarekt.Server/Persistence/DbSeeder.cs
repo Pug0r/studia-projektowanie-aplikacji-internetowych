@@ -157,6 +157,57 @@ public static class DbSeeder
 
         // 4. Backfill images for any rows that are missing them
         await BackfillImagesAsync(db, storage);
+
+        // 5. Seed example offers
+        await SeedOffersAsync(db);
+    }
+
+    private static async Task SeedOffersAsync(AppDbContext db)
+    {
+        var seller = await db.Users.FirstOrDefaultAsync(u => u.Username == "user");
+        if (seller is null) return;
+
+        // Idempotent — skip if this seller already has ≥10 offers (i.e. seeded before)
+        if (await db.Offers.CountAsync(o => o.SellerId == seller.Id) >= 10) return;
+
+        // (PerfumeId, AvailableVolumeMl, prices: (CapacityMl, Price)[])
+        var offerData = new (string PerfumeId, int AvailableMl, (int Ml, decimal Price)[] Tiers)[]
+        {
+            ("22222222-2222-2222-2222-222222222222", 100, [(5, 22.50m), (10, 39.00m), (20, 70.00m)]),   // Creed Aventus
+            ("11111111-1111-1111-1111-111111111111", 50,  [(5, 35.00m), (10, 65.00m)]),                 // Baccarat Rouge 540
+            ("33333333-3333-3333-3333-333333333333", 100, [(5, 18.00m), (10, 32.00m), (20, 58.00m)]),   // Nishane Hacivat
+            ("44444444-4444-4444-4444-444444444444", 75,  [(5, 28.00m), (10, 50.00m)]),                 // TF Black Orchid
+            ("55555555-5555-5555-5555-555555555555", 100, [(5, 30.00m), (10, 55.00m), (20, 95.00m)]),   // TF Tobacco Vanille
+            ("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb", 200, [(5, 12.00m), (10, 20.00m), (30, 52.00m)]),   // Dior Sauvage
+            ("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", 150, [(5, 15.00m), (10, 26.00m), (20, 46.00m)]),   // Hermès Terre
+            ("14141414-1414-1414-1414-141414141414", 100, [(5, 25.00m), (10, 44.00m)]),                 // Le Labo Santal 33
+            ("27272727-2727-2727-2727-272727272727", 200, [(5,  8.00m), (10, 14.00m), (30, 36.00m)]),   // Paco Rabanne 1M
+            ("16161616-1616-1616-1616-161616161616", 50,  [(5, 40.00m), (10, 72.00m)]),                 // Amouage Interlude
+        };
+
+        foreach (var (perfumeId, availableMl, tiers) in offerData)
+        {
+            var offerId = Guid.NewGuid();
+            var offer = new Offer
+            {
+                Id                = offerId,
+                SellerId          = seller.Id,
+                PerfumeId         = Guid.Parse(perfumeId),
+                AvailableVolumeMl = availableMl,
+                IsActive          = true,
+                CreatedAt         = DateTime.UtcNow,
+                Prices            = tiers.Select(t => new OfferPrice
+                {
+                    Id         = Guid.NewGuid(),
+                    OfferId    = offerId,
+                    CapacityMl = t.Ml,
+                    Price      = t.Price,
+                }).ToList(),
+            };
+            db.Offers.Add(offer);
+        }
+
+        await db.SaveChangesAsync();
     }
 
     /// <summary>
