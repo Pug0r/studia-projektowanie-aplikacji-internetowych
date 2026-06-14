@@ -127,7 +127,10 @@ public static class DbSeeder
         // 1. Apply any pending EF migrations
         await db.Database.MigrateAsync();
 
-        // 2. Ensure the S3 bucket exists
+        // 2. Seed default users
+        await SeedUsersAsync(db);
+
+        // 3. Ensure the S3 bucket exists
         await storage.EnsureBucketAsync();
 
         // 3. Incremental seeding — add any entry from SeedData not yet in DB
@@ -160,6 +163,33 @@ public static class DbSeeder
     /// Generates and uploads an SVG placeholder, stores the public URL on the perfume row.
     /// Safe to call when perfume already has an imageUrl — just skips those rows.
     /// </summary>
+    private static async Task SeedUsersAsync(AppDbContext db)
+    {
+        var existingUsernames = (await db.Users.Select(u => u.Username).ToListAsync()).ToHashSet();
+
+        var defaults = new[]
+        {
+            (Username: "admin", Password: "admin", Role: UserRole.Admin),
+            (Username: "user",  Password: "user",  Role: UserRole.User),
+        };
+
+        foreach (var (username, password, role) in defaults)
+        {
+            if (existingUsernames.Contains(username)) continue;
+
+            db.Users.Add(new User
+            {
+                Id           = Guid.NewGuid(),
+                Username     = username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                Role         = role,
+                CreatedAt    = DateTime.UtcNow,
+            });
+        }
+
+        await db.SaveChangesAsync();
+    }
+
     private static async Task BackfillImagesAsync(AppDbContext db, StorageService storage)
     {
         var missing = await db.Perfumes.Where(p => p.ImageUrl == null).ToListAsync();
