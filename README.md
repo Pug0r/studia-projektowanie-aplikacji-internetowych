@@ -1,30 +1,5 @@
 # studia-projektowanie-aplikacji-internetowych
 
-TODO
-- [x] plan dzialania
-- [x] ADR (6 wpisow)
-- [x] Opis projektu + diagram architektury
-- [x] Baza
-    - [x] kontener
-    - [x] plan schematu
-- [ ] Backend
-    - [x] kontener
-    - [x] migracje
-    - [x] wpiecie ORMa
-    - [x] data seed
-    - [ ] role
-    - [ ] endpointy
-    - [ ]* memorycache
-    - [x]* health
-    - [ ]* walidacje danych
-- [ ] Frontend
-    - [ ] logowanie
-    - [ ] widok glowny
-    - [ ] widok konta
-    - [ ] widok admina
-- [x] docker compose 
-- [ ] testy calosci   
-
 # Opis projektu
 
 Projekt to aplikacja webowa typu mini-commerce dla osób chcących kupować/sprzedawać odlewki perfum. 
@@ -56,18 +31,29 @@ graph TD
         DTO[Modele DTO & Kontrakty]:::shared
     end
 
+    subgraph Proxy [Serwer Web / Reverse Proxy]
+        NGINX[NGINX]:::server
+    end
+
     subgraph Back [Warstwa Serwerowa - .NET]
         API[ASP.NET Core REST API]:::server
+        CACHE[In-Memory Cache]:::server
         EF[Entity Framework Core ORM]:::server
         
+        API -. "Pobiera dane" .-> CACHE
         API --> EF
     end
 
     subgraph Data [Warstwa Persystencji]
         DB[(PostgreSQL)]:::database
+        MINIO[(MinIO Object Storage)]:::database
     end
 
-    SPA <==>|Zapytania HTTP GET/POST/PUT + Nagłówek 'Authorization: Bearer'| API
+    SPA <==>|Zapytania HTTP API + JWT| NGINX
+    NGINX <==>|Przekierowanie ruchu backendowego| API
+    
+    SPA -.->|Pobiera obrazki public url| MINIO
+    API <==>|Zapis/Odczyt S3 API| MINIO
     
     SPA -.->|Referencja C#| DTO
     API -.->|Referencja C#| DTO
@@ -94,12 +80,19 @@ erDiagram
     Users {
         Guid Id PK
         string Username
+        string Email
+        string PasswordHash
         string Role
+        DateTime CreatedAt
+        string Phone
+        string Messenger
     }
     Perfumes {
         Guid Id PK
         string Brand
         string Name
+        string Concentration
+        string ImageUrl
     }
     Offers {
         Guid Id PK
@@ -107,6 +100,7 @@ erDiagram
         Guid PerfumeId FK
         int AvailableVolumeMl
         bool IsActive
+        DateTime CreatedAt
     }
     OfferPrices {
         Guid Id PK
@@ -120,6 +114,8 @@ erDiagram
         Guid OfferId FK
         int VolumeBoughtMl
         decimal TotalPrice
+        int Status
+        DateTime CreatedAt
     }
     Reviews {
         Guid Id PK
@@ -128,6 +124,7 @@ erDiagram
         Guid RevieweeId FK
         int Rating
         string Comment
+        DateTime CreatedAt
     }
 ```
 
