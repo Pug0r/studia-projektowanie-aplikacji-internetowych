@@ -68,11 +68,20 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
 
-app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize = 12) =>
+app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize = 12, string? search = null) =>
 {
-    var totalCount = await db.Perfumes.CountAsync();
-    var items = await db.Perfumes
-        .AsNoTracking()
+    var query = db.Perfumes.AsNoTracking();
+
+    if (!string.IsNullOrWhiteSpace(search))
+    {
+        var pattern = $"%{search.Trim()}%";
+        query = query.Where(p =>
+            EF.Functions.ILike(p.Brand, pattern) ||
+            EF.Functions.ILike(p.Name, pattern));
+    }
+
+    var totalCount = await query.CountAsync();
+    var items = await query
         .OrderBy(p => p.Brand)
         .ThenBy(p => p.Name)
         .Skip((page - 1) * pageSize)

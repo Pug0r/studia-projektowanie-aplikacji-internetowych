@@ -35,11 +35,13 @@ public class ApiClient
 
     // ── Perfumes ─────────────────────────────────────────────────────────────
 
-    public async Task<PagedResult<Perfume>?> GetPerfumesAsync(int page = 1, int pageSize = 12)
+    public async Task<PagedResult<Perfume>?> GetPerfumesAsync(int page = 1, int pageSize = 12, string? search = null)
     {
         await AttachTokenAsync();
-        return await _http.GetFromJsonAsync<PagedResult<Perfume>>(
-            $"api/perfumes?page={page}&pageSize={pageSize}");
+        var url = $"api/perfumes?page={page}&pageSize={pageSize}";
+        if (!string.IsNullOrWhiteSpace(search))
+            url += $"&search={Uri.EscapeDataString(search)}";
+        return await _http.GetFromJsonAsync<PagedResult<Perfume>>(url);
     }
 
     // ── Health ───────────────────────────────────────────────────────────────

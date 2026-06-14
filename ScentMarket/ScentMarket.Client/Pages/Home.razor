@@ -7,8 +7,35 @@
 <PageTitle>ScentMarket — Browse</PageTitle>
 
 <div class="home-header">
-    <h1 class="home-title">Discover Decants</h1>
-    <p class="home-subtitle">@_totalCount perfume@(_totalCount == 1 ? "" : "s") available</p>
+    <div class="home-header-top">
+        <div>
+            <h1 class="home-title">Discover Decants</h1>
+            <p class="home-subtitle">
+                @if (string.IsNullOrWhiteSpace(_search))
+                {
+                    <span>@_totalCount perfume@(_totalCount == 1 ? "" : "s") available</span>
+                }
+                else
+                {
+                    <span>@_totalCount result@(_totalCount == 1 ? "" : "s") for &ldquo;@_search&rdquo;</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <div class="search-bar-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+            class="search-input"
+            type="search"
+            placeholder="Search by name or brand…"
+            value="@_search"
+            @oninput="OnSearchInput" />
+        @if (!string.IsNullOrWhiteSpace(_search))
+        {
+            <button class="search-clear-btn" @onclick="ClearSearch" title="Clear">✕</button>
+        }
+    </div>
 </div>
 
 @if (_perfumes.Count == 0 && _loading)
@@ -20,7 +47,9 @@
 }
 else if (_perfumes.Count == 0)
 {
-    <div class="grid-empty">No perfumes found.</div>
+    <div class="grid-empty">
+        <span>No perfumes found.</span>
+    </div>
 }
 else
 {
@@ -70,6 +99,9 @@ else if (_perfumes.Count > 0)
     private bool _observerSetup = false;
     private DotNetObjectReference<Home>? _dotNetRef;
 
+    private string _search = string.Empty;
+    private System.Threading.CancellationTokenSource? _debounceCts;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadNextPageAsync();
@@ -77,7 +109,6 @@ else if (_perfumes.Count > 0)
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Try to set up observer whenever sentinel is in DOM but not yet observed.
         if (_hasMore && !_observerSetup)
         {
             _dotNetRef ??= DotNetObjectReference.Create(this);
@@ -91,6 +122,45 @@ else if (_perfumes.Count > 0)
         }
     }
 
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        _search = e.Value?.ToString() ?? string.Empty;
+
+        // Cancel any pending debounce timer
+        _debounceCts?.Cancel();
+        _debounceCts = new System.Threading.CancellationTokenSource();
+        var token = _debounceCts.Token;
+
+        _ = Task.Delay(350, token).ContinueWith(async t =>
+        {
+            if (t.IsCanceled) return;
+            await InvokeAsync(ResetAndSearchAsync);
+        }, TaskScheduler.Default);
+    }
+
+    private async Task ClearSearch()
+    {
+        _search = string.Empty;
+        await ResetAndSearchAsync();
+    }
+
+    private async Task ResetAndSearchAsync()
+    {
+        // Tear down observer before resetting the list (sentinel will be removed from DOM)
+        if (_observerSetup)
+        {
+            await JS.InvokeVoidAsync("infiniteScroll.unobserve", "scroll-sentinel");
+            _observerSetup = false;
+        }
+
+        _perfumes.Clear();
+        _page = 1;
+        _hasMore = true;
+        _totalCount = 0;
+
+        await LoadNextPageAsync();
+    }
+
     [JSInvokable]
     public async Task LoadNextPageAsync()
     {
@@ -99,7 +169,7 @@ else if (_perfumes.Count > 0)
         _loading = true;
         StateHasChanged();
 
-        var result = await ApiClient.GetPerfumesAsync(_page, PageSize);
+        var result = await ApiClient.GetPerfumesAsync(_page, PageSize, _search);
         if (result is not null)
         {
             _perfumes.AddRange(result.Items);
@@ -113,12 +183,14 @@ else if (_perfumes.Count > 0)
         }
 
         _loading = false;
-        _observerSetup = false; // force re-observe after re-render (sentinel may have moved)
+        _observerSetup = false;
         StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()
     {
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
         if (_observerSetup)
             await JS.InvokeVoidAsync("infiniteScroll.unobserve", "scroll-sentinel");
         _dotNetRef?.Dispose();
