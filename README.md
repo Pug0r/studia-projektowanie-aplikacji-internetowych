@@ -1,18 +1,136 @@
 # studia-projektowanie-aplikacji-internetowych
 
+TODO
+- [x] plan dzialania
+- [x] ADR (6 wpisow)
+- [x] Opis projektu + diagram architektury
+- [ ] Baza
+    - [ ] kontener
+    - [ ] plan schematu
+- [ ] Backend
+    - [ ] kontener
+    - [ ] migracje
+    - [ ] wpiecie ORMa
+    - [ ] data seed
+    - [ ] role
+    - [ ] endpointy
+    - [ ]* memorycache
+    - [ ]* health
+    - [ ]* walidacje danych
+- [ ] Frontend
+    - [ ] logowanie
+    - [ ] widok glowny
+    - [ ] widok konta
+    - [ ] widok admina
+- [ ] docker compose + testy calosci   
+
 # Opis projektu
 
-Projekt to aplikacja webowa typu mini-commerce dla osób chcących kupować/sprzedawać odlewki perfum.
+Projekt to aplikacja webowa typu mini-commerce dla osób chcących kupować/sprzedawać odlewki perfum. 
+Platforma w wersji alpha nie umozliwia platnosci, a jedynie pozwala kupujacym odnajdywac sprzedajacych oraz wystawiac sobie nawzajem opinie. 
+
 Kluczowe funkcjonalności:
 - Dodanie swoich perfum na sprzedaż przy określonych cenach
 - Przeglądanie ofert innych uzytkowników
 - Mozliwość złożenia zamówienia
-- Mozliwość oceniania innych użytkowników po zawarciu transakcji
+- Mozliwość oceniania innych użytkowników po potwierdzeniu zawarcia transakcji z obydwu stron
 
 # Stos technologiczny:
 - frontend: Blazor WebAssembly
 - backend: .NET 
-- baza danych: SQLite (+ EF)
+- baza danych: Postgres (+ EF)
+
+# Diagram architektury
+
+```mermaid
+graph TD
+
+    subgraph Front [Warstwa Kliencka - Przeglądarka]
+        SPA[Blazor WebAssembly SPA]:::client
+        JS[Wbudowany LocalStorage / Stan]:::client
+        SPA -. "Przechowuje JWT" .-> JS
+    end
+
+    subgraph Common [Współdzielony Kod / Monorepo]
+        DTO[Modele DTO & Kontrakty]:::shared
+    end
+
+    subgraph Back [Warstwa Serwerowa - .NET]
+        API[ASP.NET Core REST API]:::server
+        EF[Entity Framework Core ORM]:::server
+        
+        API --> EF
+    end
+
+    subgraph Data [Warstwa Persystencji]
+        DB[(PostgreSQL)]:::database
+    end
+
+    SPA <==>|Zapytania HTTP GET/POST/PUT + Nagłówek 'Authorization: Bearer'| API
+    
+    SPA -.->|Referencja C#| DTO
+    API -.->|Referencja C#| DTO
+    
+    EF <==>|Generowane zapytania SQL + Code First Migrations| DB
+```
+
+# Schemat bazy danych
+
+```mermaid
+erDiagram
+    Users ||--o{ Offers : "wystawia (Seller)"
+    Users ||--o{ Transactions : "kupuje (Buyer)"
+    Users ||--o{ Reviews : "wystawia (Reviewer)"
+    Users ||--o{ Reviews : "otrzymuje (Reviewee)"
+    
+    Perfumes ||--o{ Offers : "dotyczy"
+    
+    Offers ||--o{ OfferPrices : "posiada cennik"
+    Offers ||--o{ Transactions : "jest przedmiotem"
+    
+    Transactions ||--o| Reviews : "podstawa do oceny"
+
+    Users {
+        Guid Id PK
+        string Username
+        string Role
+    }
+    Perfumes {
+        Guid Id PK
+        string Brand
+        string Name
+    }
+    Offers {
+        Guid Id PK
+        Guid SellerId FK
+        Guid PerfumeId FK
+        int AvailableVolumeMl
+        bool IsActive
+    }
+    OfferPrices {
+        Guid Id PK
+        Guid OfferId FK
+        int CapacityMl
+        decimal Price
+    }
+    Transactions {
+        Guid Id PK
+        Guid BuyerId FK
+        Guid OfferId FK
+        int VolumeBoughtMl
+        decimal TotalPrice
+    }
+    Reviews {
+        Guid Id PK
+        Guid TransactionId FK
+        Guid ReviewerId FK
+        Guid RevieweeId FK
+        int Rating
+        string Comment
+    }
+```
+
+# Jak uruchomić
 
 # ADR - Architecute Decision Record
 
