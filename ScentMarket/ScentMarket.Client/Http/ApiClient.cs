@@ -120,6 +120,16 @@ public class ApiClient
         }
     }
 
+    public async Task<List<string>?> GetSystemLogsAsync()
+    {
+        await AttachTokenAsync();
+        var response = await _http.GetAsync("api/logs");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<List<string>>();
+    }
+
     // ── Offers ───────────────────────────────────────────────────────────────
 
     public async Task<List<MyOfferDto>> GetMyOffersAsync()

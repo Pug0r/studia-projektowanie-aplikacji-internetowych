@@ -48,6 +48,10 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddSingleton<StorageService>();
 builder.Services.AddMemoryCache();
 
+var logBuffer = new LogBuffer(500);
+builder.Services.AddSingleton(logBuffer);
+builder.Logging.AddInMemoryLogger(logBuffer);
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -806,6 +810,14 @@ app.MapPost("/api/perfumes/cache/reload", async (AppDbContext db, IMemoryCache c
     return Results.Ok(new { message = "Cache reloaded", count = allPerfumes.Count });
 })
     .WithName("ReloadPerfumeCache")
+    .WithTags("Admin")
+    .RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+app.MapGet("/api/logs", (LogBuffer buffer) =>
+{
+    return Results.Ok(buffer.GetLogs());
+})
+    .WithName("GetSystemLogs")
     .WithTags("Admin")
     .RequireAuthorization(policy => policy.RequireRole("Admin"));
 
