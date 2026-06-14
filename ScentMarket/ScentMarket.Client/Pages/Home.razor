@@ -71,7 +71,14 @@ else
                     <div class="perfume-brand">@perfume.Brand</div>
                     <div class="perfume-name">@perfume.Name</div>
                     <div class="perfume-meta">@perfume.Concentration</div>
-                    <div class="perfume-price">Price TBD</div>
+                    @if (perfume.MinPrice.HasValue)
+                    {
+                        <div class="perfume-price">from €@perfume.MinPrice.Value.ToString("0.00")</div>
+                    }
+                    else
+                    {
+                        <div class="perfume-price no-offers">No offers yet</div>
+                    }
                 </div>
             </div>
         }

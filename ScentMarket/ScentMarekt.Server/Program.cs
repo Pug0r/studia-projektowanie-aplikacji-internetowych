@@ -87,6 +87,19 @@ app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize =
         .ThenBy(p => p.Name)
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
+        .Select(p => new Perfume
+        {
+            Id            = p.Id,
+            Brand         = p.Brand,
+            Name          = p.Name,
+            Concentration = p.Concentration,
+            ImageUrl      = p.ImageUrl,
+            MinPrice      = p.Offers
+                .Where(o => o.IsActive)
+                .SelectMany(o => o.Prices)
+                .Select(pr => (decimal?)pr.Price)
+                .Min()
+        })
         .ToArrayAsync();
 
     return Results.Ok(new PagedResult<Perfume>

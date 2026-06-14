@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace ScentMarket.Shared;
 
 public sealed class Perfume
@@ -11,6 +13,12 @@ public sealed class Perfume
 	public string Concentration { get; init; } = string.Empty;
 
     public string? ImageUrl { get; set; }
+
+    /// <summary>
+    /// Cheapest price across all active offers. Populated by the API — not stored in the DB.
+    /// </summary>
+    [NotMapped]
+    public decimal? MinPrice { get; set; }
 
     public ICollection<Offer> Offers { get; init; } = new List<Offer>();
 
