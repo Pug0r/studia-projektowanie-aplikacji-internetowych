@@ -3,17 +3,28 @@
 # Opis projektu
 
 Projekt to aplikacja webowa typu mini-commerce dla osób chcących kupować/sprzedawać odlewki perfum. 
-Platforma w wersji alpha nie umozliwia platnosci, a jedynie pozwala kupujacym odnajdywac sprzedajacych oraz wystawiac sobie nawzajem opinie. 
+Platforma posredniczy w platnosciach, a jedynie laczy kupujacych ze sprzedajacymi, dodatkowo pozwalajac na wystawienie oceny po dokonaniu transakcji, celem weryfikacji wiarygodnosci sprzedajacych.
 
-Kluczowe funkcjonalności:
-- Dodanie swoich perfum na sprzedaż przy określonych cenach
-- Przeglądanie ofert innych uzytkowników
-- Mozliwość złożenia zamówienia
-- Mozliwość oceniania innych użytkowników po potwierdzeniu zawarcia transakcji z obydwu stron
+Strona dostepna jest tylko dla zalogowanych. Konto moze miec jedna z dwoch rol: uzytkownik lub admin.
+
+Uzytkownik:
+- przeglada liste dostepnych perfum
+- wystawia swoja oferte konkretnych perfum w zdefiniowanej przez siebie cenie
+- sklada oferty kupna wystawionych przez inne osoby perfum
+- przeglada liste swoich transakcji z przeszlosci
+- przeglada i modyfikuje swoje dane kontaktowe 
+- po zakonczonej transakcji moze wystawic sprzedajacemu ocene i komentarz
+
+Admin: wszystko to co uzytkownik, dodatkowo
+- dodaje i usuwa uzytkownikow
+- dodaje nowe perfumy do bazy 
+- ma dostep do logow aplikacji
+- moze zrestartowac cache zdefiniowanych perfum
+
 
 # Stos technologiczny:
-- frontend: Blazor WebAssembly
-- backend: .NET 
+- frontend: Blazor WebAssembly (+nginx)
+- backend: .NET 10
 - baza danych: Postgres (+ EF)
 
 # Diagram architektury
@@ -129,6 +140,11 @@ erDiagram
 ```
 
 # Jak uruchomić
+
+Wystarczy sklonowac repozytorium i uruchomic docker-compose np. poleceniem
+```
+docker-compose up -d
+```
 
 # ADR - Architecute Decision Record
 
