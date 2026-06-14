@@ -93,7 +93,47 @@ public class ApiClient
         return await _http.GetFromJsonAsync<BackendHealth>("health");
     }
 
+    // ── Transactions ─────────────────────────────────────────────────────────
+
+    public async Task<List<TransactionDto>> GetTransactionsAsync()
+    {
+        await AttachTokenAsync();
+        var result = await _http.GetFromJsonAsync<List<TransactionDto>>("api/transactions");
+        return result ?? [];
+    }
+
+    public async Task<(Guid? id, string? error)> CreateTransactionAsync(CreateTransactionRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PostAsJsonAsync("api/transactions", request);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            var result = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            return (result.GetProperty("id").GetGuid(), null);
+        }
+        
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (null, msg);
+        }
+        catch
+        {
+            return (null, response.ReasonPhrase);
+        }
+    }
+
+    public async Task<bool> UpdateTransactionStatusAsync(Guid id, UpdateStatusRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PutAsJsonAsync($"api/transactions/{id}/status", request);
+        return response.IsSuccessStatusCode;
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
+
 
     private async Task AttachTokenAsync()
     {

@@ -133,6 +133,13 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
                     SellerUsername    = o.Seller.Username,
                     AvailableVolumeMl = o.AvailableVolumeMl,
                     CreatedAt         = o.CreatedAt,
+                    ContactInfo       = new ContactInfoDto
+                    {
+                        Email     = o.Seller.Email,
+                        Phone     = o.Seller.Phone,
+                        WhatsApp  = o.Seller.WhatsApp,
+                        Messenger = o.Seller.Messenger
+                    },
                     Prices            = o.Prices
                         .OrderBy(p => p.CapacityMl)
                         .Select(p => new OfferPriceSummary
@@ -152,7 +159,134 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
     .WithName("GetPerfumeDetail")
     .RequireAuthorization();
 
+app.MapGet("/api/transactions", async (ClaimsPrincipal user, AppDbContext db) =>
+{
+    var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    
+    var transactions = await db.Transactions
+        .AsNoTracking()
+        .Where(t => t.BuyerId == userId || t.Offer.SellerId == userId)
+        .OrderByDescending(t => t.CreatedAt)
+        .Select(t => new TransactionDto
+        {
+            Id = t.Id,
+            BuyerId = t.BuyerId,
+            BuyerUsername = t.Buyer.Username,
+            OfferId = t.OfferId,
+            SellerUsername = t.Offer.Seller.Username,
+            PerfumeBrand = t.Offer.Perfume.Brand,
+            PerfumeName = t.Offer.Perfume.Name,
+            PerfumeConcentration = t.Offer.Perfume.Concentration,
+            PerfumeImageUrl = t.Offer.Perfume.ImageUrl,
+            VolumeBoughtMl = t.VolumeBoughtMl,
+            TotalPrice = t.TotalPrice,
+            Status = t.Status,
+            CreatedAt = t.CreatedAt,
+            SellerContactInfo = new ContactInfoDto
+            {
+                Email = t.Offer.Seller.Email,
+                Phone = t.Offer.Seller.Phone,
+                WhatsApp = t.Offer.Seller.WhatsApp,
+                Messenger = t.Offer.Seller.Messenger
+            },
+            BuyerContactInfo = new ContactInfoDto
+            {
+                Email = t.Buyer.Email,
+                Phone = t.Buyer.Phone,
+                WhatsApp = t.Buyer.WhatsApp,
+                Messenger = t.Buyer.Messenger
+            }
+        })
+        .ToListAsync();
+
+    return Results.Ok(transactions);
+})
+.WithName("GetTransactions")
+.RequireAuthorization();
+
+app.MapPost("/api/transactions", async (CreateTransactionRequest request, ClaimsPrincipal user, AppDbContext db) =>
+{
+    var buyerId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    
+    var offer = await db.Offers
+        .Include(o => o.Prices)
+        .FirstOrDefaultAsync(o => o.Id == request.OfferId);
+        
+    if (offer is null || !offer.IsActive)
+        return Results.BadRequest(new { message = "Offer is not available." });
+        
+    if (offer.SellerId == buyerId)
+        return Results.BadRequest(new { message = "You cannot buy your own offer." });
+        
+    var tier = offer.Prices.FirstOrDefault(p => p.CapacityMl == request.VolumeBoughtMl);
+    if (tier is null)
+        return Results.BadRequest(new { message = "Selected volume is not available for this offer." });
+        
+    if (offer.AvailableVolumeMl < request.VolumeBoughtMl)
+        return Results.BadRequest(new { message = "Not enough volume available." });
+        
+    var transaction = new Transaction
+    {
+        Id = Guid.NewGuid(),
+        BuyerId = buyerId,
+        OfferId = offer.Id,
+        VolumeBoughtMl = request.VolumeBoughtMl,
+        TotalPrice = tier.Price,
+        Status = TransactionStatus.Pending,
+        CreatedAt = DateTime.UtcNow
+    };
+    
+    offer.AvailableVolumeMl -= request.VolumeBoughtMl;
+    if (offer.AvailableVolumeMl == 0)
+    {
+        offer.IsActive = false;
+    }
+    
+    db.Transactions.Add(transaction);
+    await db.SaveChangesAsync();
+    
+    return Results.Ok(new { transaction.Id });
+})
+.WithName("CreateTransaction")
+.RequireAuthorization();
+
+app.MapPut("/api/transactions/{id:guid}/status", async (Guid id, UpdateStatusRequest request, ClaimsPrincipal user, AppDbContext db) =>
+{
+    var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    
+    var transaction = await db.Transactions
+        .Include(t => t.Offer)
+        .FirstOrDefaultAsync(t => t.Id == id);
+        
+    if (transaction is null) return Results.NotFound();
+    
+    bool isBuyer = transaction.BuyerId == userId;
+    bool isSeller = transaction.Offer.SellerId == userId;
+    
+    if (!isBuyer && !isSeller) return Results.Forbid();
+    
+    if (request.Status == TransactionStatus.Completed && !isSeller)
+        return Results.BadRequest(new { message = "Only the seller can confirm the transaction." });
+        
+    if (request.Status == TransactionStatus.Cancelled && transaction.Status != TransactionStatus.Pending)
+        return Results.BadRequest(new { message = "Can only cancel pending transactions." });
+        
+    if (request.Status == TransactionStatus.Cancelled)
+    {
+        transaction.Offer.AvailableVolumeMl += transaction.VolumeBoughtMl;
+        transaction.Offer.IsActive = true;
+    }
+    
+    transaction.Status = request.Status;
+    await db.SaveChangesAsync();
+    
+    return Results.Ok();
+})
+.WithName("UpdateTransactionStatus")
+.RequireAuthorization();
+
 app.MapGet("/health", async (AppDbContext db) =>
+
 {
     try
     {

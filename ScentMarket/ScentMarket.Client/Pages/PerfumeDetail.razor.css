@@ -254,7 +254,57 @@
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--gold-light);
+    flex: 1;
+    text-align: right;
+    margin-right: 1rem;
 }
+
+.btn-buy {
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    min-width: 60px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-buy:hover:not(:disabled) {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+}
+
+.btn-buy:disabled {
+    background: #444;
+    cursor: not-allowed;
+    color: transparent;
+}
+
+.spinner-small {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.error-banner {
+    background: rgba(192, 57, 43, 0.1);
+    border: 1px solid rgba(192, 57, 43, 0.3);
+    color: #e74c3c;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
 
 /* ── Offer card footer ───────────────────────────────────────── */
 

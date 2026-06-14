@@ -1,0 +1,151 @@
+@page "/transactions"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Transactions — ScentMarket</PageTitle>
+
+<div class="transactions-page">
+    <div class="page-header">
+        <h1>Transactions</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading transactions…</p>
+        </div>
+    }
+    else if (_transactions.Count == 0)
+    {
+        <div class="empty-state">
+            <span class="empty-icon">💸</span>
+            <p>You have no transactions yet.</p>
+            <a href="/" class="btn-primary">Browse Perfumes</a>
+        </div>
+    }
+    else
+    {
+        var pending = _transactions.Where(t => t.Status == TransactionStatus.Pending).ToList();
+        var history = _transactions.Where(t => t.Status != TransactionStatus.Pending).ToList();
+
+        @if (pending.Count > 0)
+        {
+            <div class="transaction-section">
+                <h2>Unconfirmed Transactions</h2>
+                <div class="transaction-list">
+                    @foreach (var t in pending)
+                    {
+                        @RenderTransactionCard(t)
+                    }
+                </div>
+            </div>
+        }
+
+        @if (history.Count > 0)
+        {
+            <div class="transaction-section">
+                <h2>Confirmed & History</h2>
+                <div class="transaction-list">
+                    @foreach (var t in history)
+                    {
+                        @RenderTransactionCard(t)
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<TransactionDto> _transactions = [];
+    private bool _loading = true;
+    private Guid _myUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthState.GetAuthenticationStateAsync();
+        var sub = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (Guid.TryParse(sub, out var uid))
+        {
+            _myUserId = uid;
+        }
+
+        await LoadTransactionsAsync();
+    }
+
+    private async Task LoadTransactionsAsync()
+    {
+        _loading = true;
+        _transactions = await ApiClient.GetTransactionsAsync();
+        _loading = false;
+    }
+
+    private async Task UpdateStatus(Guid id, TransactionStatus status)
+    {
+        var success = await ApiClient.UpdateTransactionStatusAsync(id, new UpdateStatusRequest { Status = status });
+        if (success)
+        {
+            await LoadTransactionsAsync();
+        }
+    }
+
+    private RenderFragment RenderTransactionCard(TransactionDto t) => __builder =>
+    {
+        bool amBuyer = t.BuyerId == _myUserId;
+        var roleBadge = amBuyer ? "You are buying" : "You are selling";
+        var otherUser = amBuyer ? t.SellerUsername : t.BuyerUsername;
+        var contactInfo = amBuyer ? t.SellerContactInfo : t.BuyerContactInfo;
+
+        <div class="transaction-card @t.Status.ToString().ToLower()">
+            <div class="t-header">
+                <span class="t-role-badge @(amBuyer ? "buyer" : "seller")">@roleBadge</span>
+                <span class="t-status @t.Status.ToString().ToLower()">@t.Status.ToString()</span>
+            </div>
+
+            <div class="t-body">
+                <div class="t-perfume-info">
+                    <div class="t-brand">@t.PerfumeBrand</div>
+                    <div class="t-name">@t.PerfumeName</div>
+                    <div class="t-volume">@t.VolumeBoughtMl ml</div>
+                </div>
+
+                <div class="t-price">
+                    <div class="t-price-label">Total</div>
+                    <div class="t-price-value">€@t.TotalPrice.ToString("0.00")</div>
+                </div>
+            </div>
+
+            <div class="t-contact-info">
+                <div class="t-contact-label">Contact @otherUser:</div>
+                <div class="t-contact-details">
+                    @if (!string.IsNullOrEmpty(contactInfo.Email)) { <span>✉️ @contactInfo.Email</span> }
+                    @if (!string.IsNullOrEmpty(contactInfo.Phone)) { <span>📞 @contactInfo.Phone</span> }
+                    @if (!string.IsNullOrEmpty(contactInfo.WhatsApp)) { <span>💬 WA: @contactInfo.WhatsApp</span> }
+                    @if (!string.IsNullOrEmpty(contactInfo.Messenger)) { <span>💬 Msgr: @contactInfo.Messenger</span> }
+                    @if (string.IsNullOrEmpty(contactInfo.Email) && string.IsNullOrEmpty(contactInfo.Phone) && string.IsNullOrEmpty(contactInfo.WhatsApp) && string.IsNullOrEmpty(contactInfo.Messenger))
+                    {
+                        <span class="t-no-contact">No contact info provided.</span>
+                    }
+                </div>
+            </div>
+
+            @if (t.Status == TransactionStatus.Pending)
+            {
+                <div class="t-actions">
+                    @if (!amBuyer)
+                    {
+                        <button class="btn-confirm" @onclick="() => UpdateStatus(t.Id, TransactionStatus.Completed)">Confirm Sale</button>
+                    }
+                    <button class="btn-cancel" @onclick="() => UpdateStatus(t.Id, TransactionStatus.Cancelled)">Cancel</button>
+                </div>
+            }
+            
+            <div class="t-footer">
+                @t.CreatedAt.ToLocalTime().ToString("MMM d, yyyy HH:mm")
+            </div>
+        </div>
+    };
+
+}

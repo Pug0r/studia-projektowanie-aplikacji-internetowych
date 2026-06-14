@@ -12,9 +12,9 @@ public sealed class Offer
 
     public Perfume Perfume { get; init; } = null!;
 
-    public int AvailableVolumeMl { get; init; }
+    public int AvailableVolumeMl { get; set; }
 
-    public bool IsActive { get; init; }
+    public bool IsActive { get; set; }
 
     public DateTime CreatedAt { get; init; }
 

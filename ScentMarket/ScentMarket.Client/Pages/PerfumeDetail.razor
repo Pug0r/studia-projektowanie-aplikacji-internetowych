@@ -64,6 +64,11 @@ else
             }
         </h2>
 
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="error-banner">@_error</div>
+        }
+
         @if (_detail.Offers.Count == 0)
         {
             <div class="offers-empty">
@@ -93,9 +98,20 @@ else
                                 <div class="offer-tier">
                                     <span class="tier-size">@tier.CapacityMl ml</span>
                                     <span class="tier-price">€@tier.Price.ToString("0.00")</span>
+                                    @if (_buyingOfferId == offer.Id && _buyingCapacity == tier.CapacityMl)
+                                    {
+                                        <button class="btn-buy" disabled>
+                                            <span class="spinner-small"></span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn-buy" @onclick="() => BuyTier(offer.Id, tier.CapacityMl)">Buy</button>
+                                    }
                                 </div>
                             }
                         </div>
+
 
                         <div class="offer-card-footer">
                             <span class="offer-date">Listed @offer.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>
@@ -112,6 +128,10 @@ else
 
     private PerfumeDetailDto? _detail;
     private bool _loading = true;
+    private string? _error;
+    
+    private Guid? _buyingOfferId;
+    private int? _buyingCapacity;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -119,4 +139,33 @@ else
         _detail = await ApiClient.GetPerfumeDetailAsync(Id);
         _loading = false;
     }
+
+    private async Task BuyTier(Guid offerId, int capacityMl)
+    {
+        _buyingOfferId = offerId;
+        _buyingCapacity = capacityMl;
+        _error = null;
+
+        var request = new CreateTransactionRequest
+        {
+            OfferId = offerId,
+            VolumeBoughtMl = capacityMl
+        };
+
+        var result = await ApiClient.CreateTransactionAsync(request);
+        
+        _buyingOfferId = null;
+        _buyingCapacity = null;
+
+        if (result.id.HasValue)
+        {
+            Nav.NavigateTo("/transactions");
+        }
+        else
+        {
+            _error = result.error ?? "Could not create transaction.";
+        }
+    }
 }
+
+

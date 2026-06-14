@@ -16,7 +16,7 @@ public sealed class Transaction
 
     public decimal TotalPrice { get; init; }
 
-    public TransactionStatus Status { get; init; }
+    public TransactionStatus Status { get; set; }
 
     public DateTime CreatedAt { get; init; }
 

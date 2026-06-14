@@ -6,13 +6,17 @@ public sealed class User
 
     public string Username { get; init; } = string.Empty;
 
-    public string? Email { get; init; }
+    public string? Email { get; set; }
 
     public string PasswordHash { get; init; } = string.Empty;
 
     public UserRole Role { get; init; }
 
     public DateTime CreatedAt { get; init; }
+
+    public string? Phone { get; set; }
+    public string? WhatsApp { get; set; }
+    public string? Messenger { get; set; }
 
     public ICollection<Offer> SoldOffers { get; init; } = new List<Offer>();
 

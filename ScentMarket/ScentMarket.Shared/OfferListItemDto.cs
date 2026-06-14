@@ -7,5 +7,6 @@ public sealed class OfferListItemDto
     public string SellerUsername { get; init; } = string.Empty;
     public int AvailableVolumeMl { get; init; }
     public DateTime CreatedAt { get; init; }
+    public ContactInfoDto ContactInfo { get; init; } = new();
     public List<OfferPriceSummary> Prices { get; init; } = [];
 }
