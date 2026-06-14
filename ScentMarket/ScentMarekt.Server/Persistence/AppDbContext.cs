@@ -29,12 +29,12 @@ public sealed class AppDbContext : DbContext
             entity.ToTable("Users");
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Username).HasMaxLength(100).IsRequired();
-            entity.Property(x => x.Email).HasMaxLength(200).IsRequired();
+            entity.Property(x => x.Email).HasMaxLength(200).IsRequired(false);
             entity.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
             entity.Property(x => x.Role).HasConversion<string>().HasMaxLength(20).IsRequired();
             entity.Property(x => x.CreatedAt).HasColumnType("timestamp with time zone").IsRequired();
             entity.HasIndex(x => x.Username).IsUnique();
-            entity.HasIndex(x => x.Email).IsUnique();
+            entity.HasIndex(x => x.Email).IsUnique().HasFilter("\"Email\" IS NOT NULL");
 
             entity.HasMany(x => x.SoldOffers)
                 .WithOne(x => x.Seller)

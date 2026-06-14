@@ -24,6 +24,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=database;Port=5432;Database=scentmarket;Username=admin;Password=admin
+      Jwt__Key: "dev-scentmarket-secret-key-min32chars!!"
     ports:
       - "5109:8080"
 

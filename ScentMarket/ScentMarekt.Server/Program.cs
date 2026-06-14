@@ -1,14 +1,43 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ScentMarekt.Server.Persistence;
+using ScentMarekt.Server.Services;
 using ScentMarket.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ── Services ────────────────────────────────────────────────────────────────
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<AuthService>();
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// ── App ──────────────────────────────────────────────────────────────────────
 
 var app = builder.Build();
 
@@ -18,7 +47,6 @@ await using (var scope = app.Services.CreateAsyncScope())
     await DbSeeder.SeedAsync(db);
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -30,6 +58,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+
+// ── Endpoints ────────────────────────────────────────────────────────────────
 
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
@@ -37,8 +69,8 @@ app.MapGet("/", () => Results.Redirect("/swagger"))
 app.MapGet("/api/perfumes", async (AppDbContext db) =>
     await db.Perfumes
         .AsNoTracking()
-        .OrderBy(perfume => perfume.Brand)
-        .ThenBy(perfume => perfume.Name)
+        .OrderBy(p => p.Brand)
+        .ThenBy(p => p.Name)
         .ToArrayAsync())
     .WithName("GetPerfumes");
 
@@ -71,5 +103,23 @@ app.MapGet("/health", async (AppDbContext db) =>
     }
 })
     .WithName("GetHealth");
+
+app.MapPost("/api/auth/register", async (RegisterRequest request, AuthService auth) =>
+{
+    var response = await auth.RegisterAsync(request);
+    return response is null
+        ? Results.Conflict(new { message = "Username is already taken." })
+        : Results.Ok(response);
+})
+    .WithName("Register");
+
+app.MapPost("/api/auth/login", async (LoginRequest request, AuthService auth) =>
+{
+    var response = await auth.LoginAsync(request);
+    return response is null
+        ? Results.Unauthorized()
+        : Results.Ok(response);
+})
+    .WithName("Login");
 
 app.Run();
