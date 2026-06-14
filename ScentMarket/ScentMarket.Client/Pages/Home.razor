@@ -1,7 +1,42 @@
 ﻿@page "/"
+@inject HttpClient Http
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>ScentMarket</h1>
 
-Welcome to your new app.
+<p>Available perfumes from the server.</p>
+
+@if (_perfumes is null)
+{
+	<p><em>Loading...</em></p>
+}
+else
+{
+	<table class="table">
+		<thead>
+		<tr>
+			<th>Name</th>
+			<th>Id</th>
+		</tr>
+		</thead>
+		<tbody>
+		@foreach (var perfume in _perfumes)
+		{
+			<tr>
+				<td>@perfume.Name</td>
+				<td><code>@perfume.Id</code></td>
+			</tr>
+		}
+		</tbody>
+	</table>
+}
+
+@code {
+	private Perfume[]? _perfumes;
+
+	protected override async Task OnInitializedAsync()
+	{
+		_perfumes = await Http.GetFromJsonAsync<Perfume[]>("/api/perfumes");
+	}
+}

@@ -16,24 +16,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+var perfumes = new[]
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+    new Perfume { Id = Guid.Parse("11111111-1111-1111-1111-111111111111"), Name = "Maison Francis Kurkdjian - Baccarat Rouge 540" },
+    new Perfume { Id = Guid.Parse("22222222-2222-2222-2222-222222222222"), Name = "Creed - Aventus" },
+    new Perfume { Id = Guid.Parse("33333333-3333-3333-3333-333333333333"), Name = "Nishane - Hacivat" }
 };
 
-app.MapGet("/weatherforecast", () =>
-    {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecastDto
-                {
-                    Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    TemperatureC = Random.Shared.Next(-20, 55),
-                    Summary = summaries[Random.Shared.Next(summaries.Length)]
-                })
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast");
+app.MapGet("/api/perfumes", () => perfumes)
+    .WithName("GetPerfumes");
 
 app.Run();
 
