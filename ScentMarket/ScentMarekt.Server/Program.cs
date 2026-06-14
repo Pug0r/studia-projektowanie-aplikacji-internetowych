@@ -3,18 +3,26 @@ using ScentMarket.Shared;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "ScentMarket API V1");
+        options.RoutePrefix = "swagger";
+    });
 }
 
 app.UseHttpsRedirection();
+
+app.MapGet("/", () => Results.Redirect("/swagger"))
+    .ExcludeFromDescription();
 
 var perfumes = new[]
 {
