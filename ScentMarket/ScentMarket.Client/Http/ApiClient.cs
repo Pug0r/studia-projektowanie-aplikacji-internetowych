@@ -35,10 +35,11 @@ public class ApiClient
 
     // ── Perfumes ─────────────────────────────────────────────────────────────
 
-    public async Task<Perfume[]?> GetPerfumesAsync()
+    public async Task<PagedResult<Perfume>?> GetPerfumesAsync(int page = 1, int pageSize = 12)
     {
         await AttachTokenAsync();
-        return await _http.GetFromJsonAsync<Perfume[]>("api/perfumes");
+        return await _http.GetFromJsonAsync<PagedResult<Perfume>>(
+            $"api/perfumes?page={page}&pageSize={pageSize}");
     }
 
     // ── Health ───────────────────────────────────────────────────────────────

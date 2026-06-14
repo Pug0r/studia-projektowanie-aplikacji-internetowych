@@ -66,12 +66,25 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
 
-app.MapGet("/api/perfumes", async (AppDbContext db) =>
-    await db.Perfumes
+app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize = 12) =>
+{
+    var totalCount = await db.Perfumes.CountAsync();
+    var items = await db.Perfumes
         .AsNoTracking()
         .OrderBy(p => p.Brand)
         .ThenBy(p => p.Name)
-        .ToArrayAsync())
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToArrayAsync();
+
+    return Results.Ok(new PagedResult<Perfume>
+    {
+        Items = items,
+        Page = page,
+        PageSize = pageSize,
+        TotalCount = totalCount
+    });
+})
     .WithName("GetPerfumes");
 
 app.MapGet("/health", async (AppDbContext db) =>
