@@ -518,7 +518,7 @@ app.MapPost("/api/reviews", async (CreateReviewRequest request, ClaimsPrincipal 
 .WithTags("Reviews")
 .RequireAuthorization();
 
-app.MapGet("/health", async (AppDbContext db) =>
+app.MapGet("/health", async (AppDbContext db, IMemoryCache cache) =>
 
 {
     try
@@ -526,12 +526,19 @@ app.MapGet("/health", async (AppDbContext db) =>
         await db.Database.OpenConnectionAsync();
         var connection = db.Database.GetDbConnection();
 
+        int? cacheCount = null;
+        if (cache.TryGetValue("all_perfumes", out List<Perfume>? allPerfumes))
+        {
+            cacheCount = allPerfumes?.Count;
+        }
+
         return Results.Ok(new BackendHealth
         {
             Healthy = true,
             Message = "Database is reachable.",
             Database = connection.Database,
-            ServerVersion = connection.ServerVersion
+            ServerVersion = connection.ServerVersion,
+            CacheItemCount = cacheCount
         });
     }
     catch (Exception ex)

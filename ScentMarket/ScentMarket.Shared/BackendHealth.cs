@@ -10,7 +10,9 @@ public sealed class BackendHealth
 
     public string? ServerVersion { get; init; }
 
-    public string Summary() => $"{Healthy}: {Message} {Database} {ServerVersion}";
+    public int? CacheItemCount { get; init; }
+
+    public string Summary() => $"{Healthy}: {Message} {Database} {ServerVersion} Cache: {CacheItemCount}";
 }
 
 
