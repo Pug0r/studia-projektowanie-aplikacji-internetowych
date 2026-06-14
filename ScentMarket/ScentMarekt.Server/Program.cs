@@ -112,6 +112,46 @@ app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize =
 })
     .WithName("GetPerfumes");
 
+app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
+{
+    var perfume = await db.Perfumes
+        .AsNoTracking()
+        .Where(p => p.Id == id)
+        .Select(p => new PerfumeDetailDto
+        {
+            Id            = p.Id,
+            Brand         = p.Brand,
+            Name          = p.Name,
+            Concentration = p.Concentration,
+            ImageUrl      = p.ImageUrl,
+            Offers        = p.Offers
+                .Where(o => o.IsActive)
+                .OrderBy(o => o.Prices.Select(pr => (decimal?)pr.Price).Min())
+                .Select(o => new OfferListItemDto
+                {
+                    Id                = o.Id,
+                    SellerUsername    = o.Seller.Username,
+                    AvailableVolumeMl = o.AvailableVolumeMl,
+                    CreatedAt         = o.CreatedAt,
+                    Prices            = o.Prices
+                        .OrderBy(p => p.CapacityMl)
+                        .Select(p => new OfferPriceSummary
+                        {
+                            Id         = p.Id,
+                            CapacityMl = p.CapacityMl,
+                            Price      = p.Price
+                        })
+                        .ToList()
+                })
+                .ToList()
+        })
+        .FirstOrDefaultAsync();
+
+    return perfume is null ? Results.NotFound() : Results.Ok(perfume);
+})
+    .WithName("GetPerfumeDetail")
+    .RequireAuthorization();
+
 app.MapGet("/health", async (AppDbContext db) =>
 {
     try

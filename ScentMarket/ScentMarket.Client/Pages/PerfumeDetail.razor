@@ -1,0 +1,122 @@
+@page "/perfume/{Id:guid}"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+@inject NavigationManager Nav
+
+<PageTitle>@(_detail is null ? "Loading…" : $"{_detail.Brand} {_detail.Name} — ScentMarket")</PageTitle>
+
+@if (_loading)
+{
+    <div class="detail-loading">
+        <div class="spinner"></div>
+        <p>Loading…</p>
+    </div>
+}
+else if (_detail is null)
+{
+    <div class="detail-not-found">
+        <p>Perfume not found.</p>
+        <button class="btn-back" @onclick='() => Nav.NavigateTo("/")'>← Back to Browse</button>
+    </div>
+}
+else
+{
+    <div class="detail-hero">
+        <button class="btn-back" @onclick='() => Nav.NavigateTo("/")'>← Browse</button>
+
+        <div class="detail-hero-inner">
+            <div class="detail-image-wrap">
+                @if (_detail.ImageUrl is not null)
+                {
+                    <img src="@_detail.ImageUrl" alt="@_detail.Brand @_detail.Name" class="detail-image" />
+                }
+                else
+                {
+                    <span class="detail-image-placeholder">🧴</span>
+                }
+            </div>
+
+            <div class="detail-info">
+                <div class="detail-brand">@_detail.Brand</div>
+                <h1 class="detail-name">@_detail.Name</h1>
+                <div class="detail-concentration">@_detail.Concentration</div>
+
+                @if (_detail.Offers.Count > 0)
+                {
+                    var minPrice = _detail.Offers
+                        .SelectMany(o => o.Prices)
+                        .Min(p => p.Price);
+                    <div class="detail-min-price">from €@minPrice.ToString("0.00")</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="offers-section">
+        <h2 class="offers-section-title">
+            @if (_detail.Offers.Count == 0)
+            {
+                <span>No offers available</span>
+            }
+            else
+            {
+                <span>@_detail.Offers.Count offer@(_detail.Offers.Count == 1 ? "" : "s") available</span>
+            }
+        </h2>
+
+        @if (_detail.Offers.Count == 0)
+        {
+            <div class="offers-empty">
+                <p>No one is selling this perfume yet.</p>
+                <p class="offers-empty-hint">
+                    Be the first — <a href="/my-offers">list your decant →</a>
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="offer-cards">
+                @foreach (var offer in _detail.Offers)
+                {
+                    <div class="offer-card">
+                        <div class="offer-card-top">
+                            <div class="offer-seller">
+                                <span class="seller-icon">👤</span>
+                                <span class="seller-name">@offer.SellerUsername</span>
+                            </div>
+                            <div class="offer-volume">@offer.AvailableVolumeMl ml available</div>
+                        </div>
+
+                        <div class="offer-tiers">
+                            @foreach (var tier in offer.Prices)
+                            {
+                                <div class="offer-tier">
+                                    <span class="tier-size">@tier.CapacityMl ml</span>
+                                    <span class="tier-price">€@tier.Price.ToString("0.00")</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="offer-card-footer">
+                            <span class="offer-date">Listed @offer.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private PerfumeDetailDto? _detail;
+    private bool _loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _detail = await ApiClient.GetPerfumeDetailAsync(Id);
+        _loading = false;
+    }
+}

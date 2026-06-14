@@ -52,6 +52,12 @@ public class ApiClient
         return result?.Items.ToList() ?? [];
     }
 
+    public async Task<PerfumeDetailDto?> GetPerfumeDetailAsync(Guid id)
+    {
+        await AttachTokenAsync();
+        return await _http.GetFromJsonAsync<PerfumeDetailDto>($"api/perfumes/{id}");
+    }
+
     // ── Offers ───────────────────────────────────────────────────────────────
 
     public async Task<List<MyOfferDto>> GetMyOffersAsync()

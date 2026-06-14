@@ -56,7 +56,7 @@ else
     <div class="perfume-grid">
         @foreach (var perfume in _perfumes)
         {
-            <div class="perfume-card">
+            <a class="perfume-card" href="/perfume/@perfume.Id">
                 <div class="perfume-card-image">
                     @if (perfume.ImageUrl is not null)
                     {
@@ -80,7 +80,7 @@ else
                         <div class="perfume-price no-offers">No offers yet</div>
                     }
                 </div>
-            </div>
+            </a>
         }
     </div>
 }
