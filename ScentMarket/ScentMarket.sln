@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScentMarket.Client", "ScentMarket.Client\ScentMarket.Client.csproj", "{EDEEFF8D-63E2-4980-8322-3B895AA092CA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScentMarekt.Server", "ScentMarekt.Server\ScentMarekt.Server.csproj", "{A3BABB41-EF36-470C-A38D-0D4B17F5F3F3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScentMarket.Shared", "ScentMarket.Shared\ScentMarket.Shared.csproj", "{A2D8820B-04AC-4372-A80B-B06A1580AEDE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EDEEFF8D-63E2-4980-8322-3B895AA092CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EDEEFF8D-63E2-4980-8322-3B895AA092CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EDEEFF8D-63E2-4980-8322-3B895AA092CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EDEEFF8D-63E2-4980-8322-3B895AA092CA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3BABB41-EF36-470C-A38D-0D4B17F5F3F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3BABB41-EF36-470C-A38D-0D4B17F5F3F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3BABB41-EF36-470C-A38D-0D4B17F5F3F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3BABB41-EF36-470C-A38D-0D4B17F5F3F3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2D8820B-04AC-4372-A80B-B06A1580AEDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2D8820B-04AC-4372-A80B-B06A1580AEDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2D8820B-04AC-4372-A80B-B06A1580AEDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2D8820B-04AC-4372-A80B-B06A1580AEDE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

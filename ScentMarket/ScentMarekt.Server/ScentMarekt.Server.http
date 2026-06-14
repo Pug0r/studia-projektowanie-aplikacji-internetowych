@@ -1,0 +1,6 @@
+@ScentMarekt.Server_HostAddress = http://localhost:5109
+
+GET {{ScentMarekt.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
