@@ -7,6 +7,27 @@
 
 <p>Available perfumes from the server.</p>
 
+<div class="mb-3">
+	@if (_health is null)
+	{
+		<p><em>Checking backend health...</em></p>
+	}
+	else if (_health.Healthy)
+	{
+		<p class="text-success mb-0">
+			Backend healthy: @_health.Message
+			@if (!string.IsNullOrWhiteSpace(_health.Database))
+			{
+				<span>(@_health.Database @_health.ServerVersion)</span>
+			}
+		</p>
+	}
+	else
+	{
+		<p class="text-danger mb-0">Backend unhealthy: @_health.Message</p>
+	}
+</div>
+
 @if (_perfumes is null)
 {
 	<p><em>Loading...</em></p>
@@ -34,9 +55,16 @@ else
 
 @code {
 	private Perfume[]? _perfumes;
+	private BackendHealth? _health;
 
 	protected override async Task OnInitializedAsync()
 	{
-		_perfumes = await Http.GetFromJsonAsync<Perfume[]>("/api/perfumes");
+		var healthTask = Http.GetFromJsonAsync<BackendHealth>("/health");
+		var perfumesTask = Http.GetFromJsonAsync<Perfume[]>("/api/perfumes");
+
+		await Task.WhenAll(healthTask, perfumesTask);
+
+		_health = await healthTask;
+		_perfumes = await perfumesTask;
 	}
 }
