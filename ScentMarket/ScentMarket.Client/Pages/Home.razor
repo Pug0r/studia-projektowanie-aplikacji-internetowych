@@ -1,86 +1,119 @@
 @page "/"
 @attribute [Authorize]
 @inject ApiClient ApiClient
-@inject AuthStateProvider AuthStateProvider
-@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
 
-<PageTitle>ScentMarket — Home</PageTitle>
+<PageTitle>ScentMarket — Browse</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>ScentMarket</h1>
-    <button class="btn btn-outline-secondary btn-sm" @onclick="LogoutAsync">Sign out</button>
+<div class="home-header">
+    <h1 class="home-title">Discover Decants</h1>
+    <p class="home-subtitle">@_totalCount perfume@(_totalCount == 1 ? "" : "s") available</p>
 </div>
 
-<p>Available perfumes from the server.</p>
-
-<div class="mb-3">
-    @if (_health is null)
-    {
-        <p><em>Checking backend health...</em></p>
-    }
-    else if (_health.Healthy)
-    {
-        <p class="text-success mb-0">
-            Backend healthy: @_health.Message
-            @if (!string.IsNullOrWhiteSpace(_health.Database))
-            {
-                <span>(@_health.Database @_health.ServerVersion)</span>
-            }
-        </p>
-    }
-    else
-    {
-        <p class="text-danger mb-0">Backend unhealthy: @_health.Message</p>
-    }
-</div>
-
-@if (_perfumes is null)
+@if (_perfumes.Count == 0 && _loading)
 {
-    <p><em>Loading...</em></p>
+    <div class="grid-loading">
+        <div class="spinner"></div>
+        <p>Loading perfumes…</p>
+    </div>
+}
+else if (_perfumes.Count == 0)
+{
+    <div class="grid-empty">No perfumes found.</div>
 }
 else
 {
-    <table class="table">
-        <thead>
-        <tr>
-            <th>Brand</th>
-            <th>Name</th>
-            <th>Concentration</th>
-            <th>Id</th>
-        </tr>
-        </thead>
-        <tbody>
+    <div class="perfume-grid">
         @foreach (var perfume in _perfumes)
         {
-            <tr>
-                <td>@perfume.Brand</td>
-                <td>@perfume.Name</td>
-                <td>@perfume.Concentration</td>
-                <td><code>@perfume.Id</code></td>
-            </tr>
+            <div class="perfume-card">
+                <div class="perfume-card-image">
+                    <span class="perfume-placeholder-icon">🧴</span>
+                </div>
+                <div class="perfume-card-body">
+                    <div class="perfume-brand">@perfume.Brand</div>
+                    <div class="perfume-name">@perfume.Name</div>
+                    <div class="perfume-meta">@perfume.Concentration</div>
+                    <div class="perfume-price">Price TBD</div>
+                </div>
+            </div>
         }
-        </tbody>
-    </table>
+    </div>
+}
+
+@if (_hasMore)
+{
+    <div id="scroll-sentinel" class="scroll-sentinel">
+        @if (_loading) { <div class="spinner spinner-sm"></div> }
+    </div>
+}
+else if (_perfumes.Count > 0)
+{
+    <div class="scroll-end">✦ All perfumes loaded ✦</div>
 }
 
 @code {
-    private Perfume[]? _perfumes;
-    private BackendHealth? _health;
+    private readonly List<Perfume> _perfumes = [];
+    private int _page = 1;
+    private const int PageSize = 12;
+    private bool _hasMore = true;
+    private bool _loading = false;
+    private int _totalCount = 0;
+    private bool _observerSetup = false;
+    private DotNetObjectReference<Home>? _dotNetRef;
 
     protected override async Task OnInitializedAsync()
     {
-        var healthTask = ApiClient.GetHealthAsync();
-        var perfumesTask = ApiClient.GetPerfumesAsync();
-
-        await Task.WhenAll(healthTask, perfumesTask);
-
-        _health = await healthTask;
-        _perfumes = await perfumesTask;
+        await LoadNextPageAsync();
     }
 
-    private async Task LogoutAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await AuthStateProvider.NotifyUserLoggedOutAsync();
-        Nav.NavigateTo("/login");
+        // Try to set up observer whenever sentinel is in DOM but not yet observed.
+        if (_hasMore && !_observerSetup)
+        {
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            _observerSetup = await JS.InvokeAsync<bool>(
+                "infiniteScroll.observe", "scroll-sentinel", _dotNetRef, nameof(LoadNextPageAsync));
+        }
+        else if (!_hasMore && _observerSetup)
+        {
+            await JS.InvokeVoidAsync("infiniteScroll.unobserve", "scroll-sentinel");
+            _observerSetup = false;
+        }
+    }
+
+    [JSInvokable]
+    public async Task LoadNextPageAsync()
+    {
+        if (_loading || !_hasMore) return;
+
+        _loading = true;
+        StateHasChanged();
+
+        var result = await ApiClient.GetPerfumesAsync(_page, PageSize);
+        if (result is not null)
+        {
+            _perfumes.AddRange(result.Items);
+            _totalCount = result.TotalCount;
+            _hasMore = result.HasMore;
+            _page++;
+        }
+        else
+        {
+            _hasMore = false;
+        }
+
+        _loading = false;
+        _observerSetup = false; // force re-observe after re-render (sentinel may have moved)
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_observerSetup)
+            await JS.InvokeVoidAsync("infiniteScroll.unobserve", "scroll-sentinel");
+        _dotNetRef?.Dispose();
     }
 }

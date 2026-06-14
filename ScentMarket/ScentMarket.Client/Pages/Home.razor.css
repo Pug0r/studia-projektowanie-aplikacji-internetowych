@@ -1,0 +1,158 @@
+.home-header {
+    padding: 2.5rem 2rem 1.5rem;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+.home-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.03em;
+    margin: 0 0 0.3rem;
+}
+
+.home-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 0;
+}
+
+/* ── Perfume grid ───────────────────────────────────────────── */
+
+.perfume-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+    padding: 2rem;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+
+.perfume-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.perfume-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(180, 140, 60, 0.4);
+    border-color: rgba(180, 140, 60, 0.5);
+}
+
+.perfume-card-image {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #1e1e1e;
+    position: relative;
+    overflow: hidden;
+}
+
+.perfume-placeholder-icon {
+    font-size: 4rem;
+    opacity: 0.4;
+    user-select: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.perfume-card:hover .perfume-placeholder-icon {
+    opacity: 0.65;
+    transform: scale(1.08);
+}
+
+.perfume-card-body {
+    padding: 1rem;
+}
+
+.perfume-brand {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 0.3rem;
+}
+
+.perfume-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    margin-bottom: 0.25rem;
+    line-height: 1.3;
+}
+
+.perfume-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.perfume-price {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ── Loading / empty states ────────────────────────────────── */
+
+.grid-loading, .grid-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 5rem 2rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* ── Infinite scroll sentinel & end ────────────────────────── */
+
+.scroll-sentinel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    min-height: 80px;
+}
+
+.scroll-end {
+    text-align: center;
+    padding: 2.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+}
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #2e2e2e;
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.spinner-sm {
+    width: 22px;
+    height: 22px;
+    border-width: 2px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
