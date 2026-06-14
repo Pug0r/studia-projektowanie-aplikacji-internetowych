@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -45,6 +46,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddSingleton<StorageService>();
+builder.Services.AddMemoryCache();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -95,38 +97,47 @@ app.UseAuthorization();
 app.MapGet("/", () => Results.Redirect("/swagger"))
     .ExcludeFromDescription();
 
-app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize = 12, string? search = null) =>
+app.MapGet("/api/perfumes", async (AppDbContext db, IMemoryCache cache, int page = 1, int pageSize = 12, string? search = null) =>
 {
-    var query = db.Perfumes.AsNoTracking();
+    if (!cache.TryGetValue("all_perfumes", out List<Perfume>? allPerfumes))
+    {
+        allPerfumes = await db.Perfumes
+            .AsNoTracking()
+            .Select(p => new Perfume
+            {
+                Id            = p.Id,
+                Brand         = p.Brand,
+                Name          = p.Name,
+                Concentration = p.Concentration,
+                ImageUrl      = p.ImageUrl,
+                MinPrice      = p.Offers
+                    .Where(o => o.IsActive)
+                    .SelectMany(o => o.Prices)
+                    .Select(pr => (decimal?)pr.Price)
+                    .Min()
+            })
+            .ToListAsync();
+        
+        cache.Set("all_perfumes", allPerfumes);
+    }
+
+    var query = allPerfumes!.AsEnumerable();
 
     if (!string.IsNullOrWhiteSpace(search))
     {
-        var pattern = $"%{search.Trim()}%";
+        var pattern = search.Trim();
         query = query.Where(p =>
-            EF.Functions.ILike(p.Brand, pattern) ||
-            EF.Functions.ILike(p.Name, pattern));
+            p.Brand.Contains(pattern, StringComparison.OrdinalIgnoreCase) ||
+            p.Name.Contains(pattern, StringComparison.OrdinalIgnoreCase));
     }
 
-    var totalCount = await query.CountAsync();
-    var items = await query
+    var totalCount = query.Count();
+    var items = query
         .OrderBy(p => p.Brand)
         .ThenBy(p => p.Name)
         .Skip((page - 1) * pageSize)
         .Take(pageSize)
-        .Select(p => new Perfume
-        {
-            Id            = p.Id,
-            Brand         = p.Brand,
-            Name          = p.Name,
-            Concentration = p.Concentration,
-            ImageUrl      = p.ImageUrl,
-            MinPrice      = p.Offers
-                .Where(o => o.IsActive)
-                .SelectMany(o => o.Prices)
-                .Select(pr => (decimal?)pr.Price)
-                .Min()
-        })
-        .ToArrayAsync();
+        .ToArray();
 
     return Results.Ok(new PagedResult<Perfume>
     {
