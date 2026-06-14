@@ -1,0 +1,257 @@
+@page "/my-offers"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+
+<PageTitle>ScentMarket — My Offers</PageTitle>
+
+<div class="my-offers-header">
+    <div>
+        <h1 class="page-title">My Offers</h1>
+        <p class="page-subtitle">@_offers.Count offer@(_offers.Count == 1 ? "" : "s") listed</p>
+    </div>
+    <button class="btn-add-offer" @onclick="ToggleForm">
+        @(_showForm ? "✕ Cancel" : "+ New Offer")
+    </button>
+</div>
+
+@if (_showForm)
+{
+    <div class="offer-form-panel">
+        <h2 class="form-section-title">Create New Offer</h2>
+
+        @if (_formError is not null)
+        {
+            <div class="form-error-banner">⚠ @_formError</div>
+        }
+
+        <div class="form-grid">
+            <div class="form-field">
+                <label class="form-label" for="perfume-select">Perfume</label>
+                <select id="perfume-select" class="form-select" @bind="_form.PerfumeId">
+                    <option value="@Guid.Empty">— select a perfume —</option>
+                    @foreach (var p in _allPerfumes)
+                    {
+                        <option value="@p.Id">@p.Brand — @p.Name (@p.Concentration)</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label class="form-label" for="avail-vol">Total volume available (ml)</label>
+                <input id="avail-vol" class="form-input" type="number" min="1"
+                       @bind="_form.AvailableVolumeMl" />
+            </div>
+        </div>
+
+        <div class="price-tiers-section">
+            <div class="price-tiers-header">
+                <span class="form-label">Price tiers</span>
+                <button class="btn-add-tier" @onclick="AddTier">+ Add tier</button>
+            </div>
+
+            <div class="price-tiers-grid-header">
+                <span>Decant size (ml)</span>
+                <span>Price (€)</span>
+                <span></span>
+            </div>
+
+            @for (int i = 0; i < _form.Prices.Count; i++)
+            {
+                var idx = i;
+                <div class="price-tier-row">
+                    <input class="form-input" type="number" min="1"
+                           placeholder="e.g. 5"
+                           value="@_form.Prices[idx].CapacityMl"
+                           @onchange="e => _form.Prices[idx].CapacityMl = int.TryParse(e.Value?.ToString(), out var v) ? v : 0" />
+                    <input class="form-input" type="number" min="0.01" step="0.01"
+                           placeholder="e.g. 25.00"
+                           value="@_form.Prices[idx].Price"
+                           @onchange="e => _form.Prices[idx].Price = decimal.TryParse(e.Value?.ToString(), out var v) ? v : 0" />
+                    <button class="btn-remove-tier" @onclick="() => RemoveTier(idx)"
+                            disabled="@(_form.Prices.Count == 1)" title="Remove tier">✕</button>
+                </div>
+            }
+        </div>
+
+        <div class="form-actions">
+            <button class="btn-cancel" @onclick="CancelForm">Cancel</button>
+            <button class="btn-submit" @onclick="SubmitFormAsync" disabled="@_submitting">
+                @(_submitting ? "Creating…" : "Create Offer")
+            </button>
+        </div>
+    </div>
+}
+
+@if (_loading)
+{
+    <div class="offers-loading">
+        <div class="spinner"></div>
+        <p>Loading your offers…</p>
+    </div>
+}
+else if (_offers.Count == 0)
+{
+    <div class="offers-empty">
+        <p>You have no offers yet.</p>
+        <p class="offers-empty-hint">Click <strong>+ New Offer</strong> above to list your first decant.</p>
+    </div>
+}
+else
+{
+    <div class="offers-list">
+        @foreach (var offer in _offers)
+        {
+            <div class="offer-card">
+                <div class="offer-card-image">
+                    @if (offer.PerfumeImageUrl is not null)
+                    {
+                        <img src="@offer.PerfumeImageUrl" alt="@offer.PerfumeBrand @offer.PerfumeName" />
+                    }
+                    else
+                    {
+                        <span class="offer-img-placeholder">🧴</span>
+                    }
+                </div>
+                <div class="offer-card-body">
+                    <div class="offer-brand">@offer.PerfumeBrand</div>
+                    <div class="offer-name">@offer.PerfumeName</div>
+                    <div class="offer-meta">@offer.PerfumeConcentration · @offer.AvailableVolumeMl ml available</div>
+
+                    <table class="price-table">
+                        <thead>
+                            <tr>
+                                <th>Size</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tier in offer.Prices)
+                            {
+                                <tr>
+                                    <td>@tier.CapacityMl ml</td>
+                                    <td>€@tier.Price.ToString("0.00")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="offer-footer">
+                        <span class="offer-status @(offer.IsActive ? "active" : "inactive")">
+                            @(offer.IsActive ? "● Active" : "○ Inactive")
+                        </span>
+                        <span class="offer-date">@offer.CreatedAt.ToLocalTime().ToString("MMM d, yyyy")</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<MyOfferDto> _offers = [];
+    private List<Perfume> _allPerfumes = [];
+    private bool _loading = true;
+    private bool _showForm = false;
+    private bool _submitting = false;
+    private string? _formError;
+
+    private OfferFormModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var offersTask  = ApiClient.GetMyOffersAsync();
+        var perfumesTask = ApiClient.GetAllPerfumesAsync();
+        await Task.WhenAll(offersTask, perfumesTask);
+        _offers       = offersTask.Result;
+        _allPerfumes  = perfumesTask.Result;
+        _loading = false;
+    }
+
+    private void ToggleForm()
+    {
+        _showForm = !_showForm;
+        if (_showForm) ResetForm();
+    }
+
+    private void CancelForm()
+    {
+        _showForm = false;
+        ResetForm();
+    }
+
+    private void ResetForm()
+    {
+        _form = new OfferFormModel();
+        _formError = null;
+    }
+
+    private void AddTier() => _form.Prices.Add(new PriceTier());
+
+    private void RemoveTier(int index)
+    {
+        if (_form.Prices.Count > 1)
+            _form.Prices.RemoveAt(index);
+    }
+
+    private async Task SubmitFormAsync()
+    {
+        _formError = null;
+
+        if (_form.PerfumeId == Guid.Empty)
+        {
+            _formError = "Please select a perfume.";
+            return;
+        }
+        if (_form.AvailableVolumeMl <= 0)
+        {
+            _formError = "Available volume must be greater than 0.";
+            return;
+        }
+        if (_form.Prices.Any(p => p.CapacityMl <= 0 || p.Price <= 0))
+        {
+            _formError = "Each price tier must have a capacity and price greater than 0.";
+            return;
+        }
+
+        _submitting = true;
+
+        var request = new CreateOfferRequest
+        {
+            PerfumeId         = _form.PerfumeId,
+            AvailableVolumeMl = _form.AvailableVolumeMl,
+            Prices            = _form.Prices
+                .Select(p => new OfferPriceInput { CapacityMl = p.CapacityMl, Price = p.Price })
+                .ToList()
+        };
+
+        var (dto, error) = await ApiClient.CreateOfferAsync(request);
+
+        _submitting = false;
+
+        if (dto is not null)
+        {
+            _offers.Insert(0, dto);
+            _showForm = false;
+            ResetForm();
+        }
+        else
+        {
+            _formError = error ?? "An unexpected error occurred.";
+        }
+    }
+
+    // ── Local form model (mutable, for binding) ─────────────────────────────
+
+    private sealed class OfferFormModel
+    {
+        public Guid PerfumeId { get; set; } = Guid.Empty;
+        public int AvailableVolumeMl { get; set; } = 100;
+        public List<PriceTier> Prices { get; set; } = [new PriceTier()];
+    }
+
+    private sealed class PriceTier
+    {
+        public int CapacityMl { get; set; }
+        public decimal Price { get; set; }
+    }
+}

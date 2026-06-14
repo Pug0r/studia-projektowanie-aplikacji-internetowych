@@ -1,0 +1,424 @@
+/* ── Page header ─────────────────────────────────────────────── */
+
+.my-offers-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 2rem 2rem 1.5rem;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+.page-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.03em;
+    margin: 0 0 0.3rem;
+}
+
+.page-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 0;
+}
+
+.btn-add-offer {
+    background: var(--gold);
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.btn-add-offer:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+}
+
+/* ── Create-offer form panel ─────────────────────────────────── */
+
+.offer-form-panel {
+    margin: 1.5rem 2rem;
+    background: var(--bg-surface);
+    border: 1px solid #2e2e2e;
+    border-radius: 12px;
+    padding: 1.75rem 2rem;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.form-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    margin: 0 0 1.5rem;
+}
+
+.form-error-banner {
+    background: rgba(192, 57, 43, 0.15);
+    border: 1px solid rgba(192, 57, 43, 0.4);
+    border-radius: 8px;
+    color: #e74c3c;
+    font-size: 0.85rem;
+    padding: 0.65rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+}
+
+.form-input,
+.form-select {
+    background: var(--bg-elevated);
+    border: 1px solid #2e2e2e;
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    padding: 0.6rem 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.form-input:focus,
+.form-select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(180, 140, 60, 0.1);
+}
+
+.form-select option {
+    background: var(--bg-surface);
+}
+
+/* ── Price tiers ─────────────────────────────────────────────── */
+
+.price-tiers-section {
+    margin-bottom: 1.5rem;
+}
+
+.price-tiers-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.btn-add-tier {
+    background: none;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    border-radius: 6px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-add-tier:hover {
+    background: rgba(180, 140, 60, 0.12);
+    color: var(--gold-light);
+}
+
+.price-tiers-grid-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 36px;
+    gap: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    padding: 0 0 0.4rem;
+}
+
+.price-tier-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 36px;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    align-items: center;
+}
+
+.btn-remove-tier {
+    background: none;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0.55rem 0;
+    transition: border-color 0.15s, color 0.15s;
+    width: 36px;
+    text-align: center;
+}
+
+.btn-remove-tier:hover:not(:disabled) {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.btn-remove-tier:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* ── Form action buttons ─────────────────────────────────────── */
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #2a2a2a;
+}
+
+.btn-cancel {
+    background: none;
+    border: 1px solid #3a3a3a;
+    color: var(--text-muted);
+    border-radius: 8px;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.btn-cancel:hover {
+    border-color: var(--gold);
+    color: var(--gold-light);
+}
+
+.btn-submit {
+    background: var(--gold);
+    color: #111;
+    border: none;
+    border-radius: 8px;
+    padding: 0.55rem 1.5rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-submit:hover:not(:disabled) {
+    background: var(--gold-light);
+}
+
+.btn-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Loading / empty states ──────────────────────────────────── */
+
+.offers-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 5rem 2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.offers-empty {
+    text-align: center;
+    padding: 5rem 2rem;
+    color: var(--text-secondary);
+}
+
+.offers-empty p { margin: 0.4rem 0; }
+
+.offers-empty-hint {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* ── Offers list ─────────────────────────────────────────────── */
+
+.offers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+}
+
+.offer-card {
+    display: flex;
+    gap: 1.25rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.offer-card:hover {
+    border-color: rgba(180, 140, 60, 0.35);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.offer-card-image {
+    width: 90px;
+    flex-shrink: 0;
+    background: var(--bg-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.offer-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.offer-img-placeholder {
+    font-size: 2rem;
+    opacity: 0.4;
+}
+
+.offer-card-body {
+    flex: 1;
+    padding: 1rem 1rem 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.offer-brand {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+}
+
+.offer-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gold-light);
+}
+
+.offer-meta {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+/* ── Price table ─────────────────────────────────────────────── */
+
+.price-table {
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.price-table th {
+    text-align: left;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    padding: 0 1rem 0.3rem 0;
+}
+
+.price-table td {
+    padding: 0.15rem 1rem 0.15rem 0;
+    color: var(--text-secondary);
+}
+
+.price-table td:first-child {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ── Offer footer ─────────────────────────────────────────────── */
+
+.offer-footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: auto;
+    padding-top: 0.5rem;
+    border-top: 1px solid #1e1e1e;
+}
+
+.offer-status {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.offer-status.active   { color: #27ae60; }
+.offer-status.inactive { color: var(--text-muted); }
+
+.offer-date {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+/* ── Shared spinner ──────────────────────────────────────────── */
+
+.spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #2e2e2e;
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

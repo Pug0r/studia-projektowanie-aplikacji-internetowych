@@ -44,6 +44,42 @@ public class ApiClient
         return await _http.GetFromJsonAsync<PagedResult<Perfume>>(url);
     }
 
+    /// <summary>Fetches all perfumes in one page — used for dropdowns.</summary>
+    public async Task<List<Perfume>> GetAllPerfumesAsync()
+    {
+        await AttachTokenAsync();
+        var result = await _http.GetFromJsonAsync<PagedResult<Perfume>>("api/perfumes?page=1&pageSize=1000");
+        return result?.Items.ToList() ?? [];
+    }
+
+    // ── Offers ───────────────────────────────────────────────────────────────
+
+    public async Task<List<MyOfferDto>> GetMyOffersAsync()
+    {
+        await AttachTokenAsync();
+        return await _http.GetFromJsonAsync<List<MyOfferDto>>("api/offers/my") ?? [];
+    }
+
+    public async Task<(MyOfferDto? dto, string? error)> CreateOfferAsync(CreateOfferRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PostAsJsonAsync("api/offers", request);
+        if (response.IsSuccessStatusCode)
+            return (await response.Content.ReadFromJsonAsync<MyOfferDto>(), null);
+
+        // Try to extract error message from JSON body
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (null, msg);
+        }
+        catch
+        {
+            return (null, response.ReasonPhrase);
+        }
+    }
+
     // ── Health ───────────────────────────────────────────────────────────────
 
     public async Task<BackendHealth?> GetHealthAsync()

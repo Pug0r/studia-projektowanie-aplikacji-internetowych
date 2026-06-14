@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -145,5 +146,113 @@ app.MapPost("/api/auth/login", async (LoginRequest request, AuthService auth) =>
         : Results.Ok(response);
 })
     .WithName("Login");
+
+// ── Offers ───────────────────────────────────────────────────────────────────
+
+app.MapGet("/api/offers/my", async (ClaimsPrincipal user, AppDbContext db) =>
+{
+    var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    var offers = await db.Offers
+        .AsNoTracking()
+        .Where(o => o.SellerId == userId)
+        .Include(o => o.Perfume)
+        .Include(o => o.Prices)
+        .OrderByDescending(o => o.CreatedAt)
+        .Select(o => new MyOfferDto
+        {
+            Id             = o.Id,
+            PerfumeId      = o.PerfumeId,
+            PerfumeBrand   = o.Perfume.Brand,
+            PerfumeName    = o.Perfume.Name,
+            PerfumeImageUrl = o.Perfume.ImageUrl,
+            PerfumeConcentration = o.Perfume.Concentration,
+            AvailableVolumeMl = o.AvailableVolumeMl,
+            IsActive       = o.IsActive,
+            CreatedAt      = o.CreatedAt,
+            Prices         = o.Prices
+                .OrderBy(p => p.CapacityMl)
+                .Select(p => new OfferPriceSummary
+                {
+                    Id         = p.Id,
+                    CapacityMl = p.CapacityMl,
+                    Price      = p.Price
+                })
+                .ToList()
+        })
+        .ToListAsync();
+
+    return Results.Ok(offers);
+})
+    .WithName("GetMyOffers")
+    .RequireAuthorization();
+
+app.MapPost("/api/offers", async (ClaimsPrincipal user, AppDbContext db, CreateOfferRequest request) =>
+{
+    var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    // Guard: token may be stale if the DB was reset
+    var userExists = await db.Users.AnyAsync(u => u.Id == userId);
+    if (!userExists)
+        return Results.Unauthorized();
+
+    var perfume = await db.Perfumes.FindAsync(request.PerfumeId);
+    if (perfume is null)
+        return Results.NotFound(new { message = "Perfume not found." });
+
+    if (request.Prices is null || request.Prices.Count == 0)
+        return Results.BadRequest(new { message = "At least one price tier is required." });
+
+    if (request.AvailableVolumeMl <= 0)
+        return Results.BadRequest(new { message = "Available volume must be greater than 0." });
+
+    var offerId = Guid.NewGuid();
+    var offer = new Offer
+    {
+        Id                = offerId,
+        SellerId          = userId,
+        PerfumeId         = request.PerfumeId,
+        AvailableVolumeMl = request.AvailableVolumeMl,
+        IsActive          = true,
+        CreatedAt         = DateTime.UtcNow,
+        Prices            = request.Prices
+            .Where(p => p.CapacityMl > 0 && p.Price > 0)
+            .Select(p => new OfferPrice
+            {
+                Id         = Guid.NewGuid(),
+                OfferId    = offerId,
+                CapacityMl = p.CapacityMl,
+                Price      = p.Price
+            })
+            .ToList()
+    };
+
+    if (offer.Prices.Count == 0)
+        return Results.BadRequest(new { message = "All price tiers must have capacity and price > 0." });
+
+    db.Offers.Add(offer);
+    await db.SaveChangesAsync();
+
+    var dto = new MyOfferDto
+    {
+        Id                   = offer.Id,
+        PerfumeId            = perfume.Id,
+        PerfumeBrand         = perfume.Brand,
+        PerfumeName          = perfume.Name,
+        PerfumeImageUrl      = perfume.ImageUrl,
+        PerfumeConcentration = perfume.Concentration,
+        AvailableVolumeMl    = offer.AvailableVolumeMl,
+        IsActive             = offer.IsActive,
+        CreatedAt            = offer.CreatedAt,
+        Prices               = offer.Prices
+            .OrderBy(p => p.CapacityMl)
+            .Select(p => new OfferPriceSummary { Id = p.Id, CapacityMl = p.CapacityMl, Price = p.Price })
+            .ToList()
+    };
+
+    return Results.Ok(dto);
+})
+    .WithName("CreateOffer")
+    .RequireAuthorization();
 
 app.Run();
