@@ -3,15 +3,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0f0f0f;
+    background: var(--bg-base);
     background-image:
         radial-gradient(ellipse at 20% 50%, rgba(180, 140, 60, 0.08) 0%, transparent 60%),
         radial-gradient(ellipse at 80% 20%, rgba(180, 140, 60, 0.05) 0%, transparent 50%);
 }
 
 .login-card {
-    background: #1a1a1a;
-    border: 1px solid rgba(180, 140, 60, 0.25);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow:
         0 8px 40px rgba(0, 0, 0, 0.6),
@@ -26,13 +26,13 @@
     font-weight: 700;
     text-align: center;
     margin-bottom: 0.25rem;
-    color: #e8d9b0;
+    color: var(--gold-light);
     letter-spacing: 0.03em;
 }
 
 .login-subtitle {
     text-align: center;
-    color: #6b6b6b;
+    color: var(--text-muted);
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
@@ -51,10 +51,10 @@
     border: none;
     padding: 0.65rem 0;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #555;
+    color: var(--text-muted);
     cursor: pointer;
     border-bottom: 2px solid transparent;
     margin-bottom: -1px;
@@ -62,8 +62,8 @@
 }
 
 .tab-btn.active {
-    color: #b48c3c;
-    border-bottom-color: #b48c3c;
+    color: var(--gold);
+    border-bottom-color: var(--gold);
 }
 
 .form-group {
@@ -75,7 +75,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #888;
+    color: var(--text-secondary);
     margin-bottom: 0.4rem;
     display: block;
 }
@@ -86,27 +86,27 @@
     background: #111;
     border: 1px solid #2e2e2e;
     border-radius: 6px;
-    color: #e0e0e0;
+    color: var(--text-primary);
     font-size: 0.95rem;
     transition: border-color 0.2s, box-shadow 0.2s;
     box-sizing: border-box;
 }
 
 .form-control::placeholder {
-    color: #444;
+    color: var(--text-muted);
 }
 
 .form-control:focus {
     outline: none;
-    border-color: #b48c3c;
+    border-color: var(--gold);
     box-shadow: 0 0 0 3px rgba(180, 140, 60, 0.12);
 }
 
 .btn-primary-full {
     width: 100%;
     padding: 0.7rem;
-    background: linear-gradient(135deg, #b48c3c 0%, #8a6820 100%);
-    color: #0f0f0f;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+    color: var(--bg-base);
     border: none;
     border-radius: 6px;
     font-size: 0.875rem;
@@ -133,8 +133,8 @@
 }
 
 .alert-danger {
-    background: rgba(180, 60, 60, 0.15);
-    border: 1px solid rgba(180, 60, 60, 0.3);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
     color: #e07070;
     border-radius: 6px;
     padding: 0.5rem 0.75rem;
