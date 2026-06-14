@@ -58,6 +58,37 @@ public class ApiClient
         return await _http.GetFromJsonAsync<PerfumeDetailDto>($"api/perfumes/{id}");
     }
 
+    public async Task<(bool success, string? error)> CreatePerfumeAsync(string brand, string name, string concentration, Microsoft.AspNetCore.Components.Forms.IBrowserFile image)
+    {
+        await AttachTokenAsync();
+        
+        using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(brand), "brand");
+        content.Add(new StringContent(name), "name");
+        content.Add(new StringContent(concentration), "concentration");
+
+        var stream = image.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024); // 10 MB max
+        var streamContent = new StreamContent(stream);
+        streamContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(image.ContentType);
+        content.Add(streamContent, "image", image.Name);
+
+        var response = await _http.PostAsync("api/perfumes", content);
+
+        if (response.IsSuccessStatusCode)
+            return (true, null);
+
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (false, msg);
+        }
+        catch
+        {
+            return (false, response.ReasonPhrase);
+        }
+    }
+
     // ── Offers ───────────────────────────────────────────────────────────────
 
     public async Task<List<MyOfferDto>> GetMyOffersAsync()

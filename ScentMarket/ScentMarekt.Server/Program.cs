@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -190,6 +191,41 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
     .WithName("GetPerfumeDetail")
     .WithTags("Perfumes")
     .RequireAuthorization();
+
+app.MapPost("/api/perfumes", async (
+    [FromForm] string brand, 
+    [FromForm] string name, 
+    [FromForm] string concentration, 
+    IFormFile image, 
+    AppDbContext db, 
+    StorageService storage) =>
+{
+    var objectName = $"{Guid.NewGuid():N}{Path.GetExtension(image.FileName)}";
+
+    using var ms = new MemoryStream();
+    await image.CopyToAsync(ms);
+    var bytes = ms.ToArray();
+
+    var url = await storage.UploadAsync(objectName, bytes, image.ContentType);
+
+    var perfume = new Perfume
+    {
+        Id = Guid.NewGuid(),
+        Brand = brand,
+        Name = name,
+        Concentration = concentration,
+        ImageUrl = url
+    };
+
+    db.Perfumes.Add(perfume);
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new { id = perfume.Id, imageUrl = url });
+})
+.WithName("CreatePerfume")
+.WithTags("Perfumes")
+.RequireAuthorization(policy => policy.RequireRole("Admin"))
+.DisableAntiforgery();
 
 app.MapGet("/api/users/{id:guid}", async (Guid id, AppDbContext db) =>
 {

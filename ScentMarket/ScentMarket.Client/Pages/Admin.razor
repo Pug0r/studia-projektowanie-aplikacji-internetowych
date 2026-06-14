@@ -64,6 +64,61 @@
         </EditForm>
     </div>
 
+    <!-- Add New Perfume Form -->
+    <div class="admin-section mt-4">
+        <h2>Add New Perfume</h2>
+        
+        @if (!string.IsNullOrEmpty(_perfumeError))
+        {
+            <div class="alert alert-error">@_perfumeError</div>
+        }
+
+        @if (!string.IsNullOrEmpty(_perfumeSuccess))
+        {
+            <div class="alert alert-success">@_perfumeSuccess</div>
+        }
+
+        <EditForm Model="_newPerfume" OnValidSubmit="HandleAddPerfume" class="form-grid">
+            <DataAnnotationsValidator />
+            
+            <div class="form-group">
+                <label>Brand</label>
+                <InputText @bind-Value="_newPerfume.Brand" class="form-control" />
+                <ValidationMessage For="@(() => _newPerfume.Brand)" class="validation-message" />
+            </div>
+
+            <div class="form-group">
+                <label>Name</label>
+                <InputText @bind-Value="_newPerfume.Name" class="form-control" />
+                <ValidationMessage For="@(() => _newPerfume.Name)" class="validation-message" />
+            </div>
+
+            <div class="form-group">
+                <label>Concentration</label>
+                <InputSelect @bind-Value="_newPerfume.Concentration" class="form-control">
+                    <option value="EDT">EDT (Eau de Toilette)</option>
+                    <option value="EDP">EDP (Eau de Parfum)</option>
+                    <option value="Parfum">Parfum</option>
+                    <option value="Extrait">Extrait de Parfum</option>
+                    <option value="EDC">EDC (Eau de Cologne)</option>
+                </InputSelect>
+                <ValidationMessage For="@(() => _newPerfume.Concentration)" class="validation-message" />
+            </div>
+
+            <div class="form-group">
+                <label>Image</label>
+                <InputFile OnChange="HandleImageSelection" class="form-control" style="padding-top: 0.5rem;" accept="image/*" />
+                <ValidationMessage For="@(() => _newPerfume.Image)" class="validation-message" />
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary" disabled="@_isSubmittingPerfume">
+                    @if (_isSubmittingPerfume) { <span class="spinner-small"></span> } else { <span>Add Perfume</span> }
+                </button>
+            </div>
+        </EditForm>
+    </div>
+
     <!-- Users Table -->
     <div class="admin-section mt-4">
         <h2>Registered Users</h2>
@@ -240,6 +295,26 @@
     private string? _success;
     private bool _isSubmitting = false;
 
+    private class NewPerfumeModel
+    {
+        [System.ComponentModel.DataAnnotations.Required] 
+        public string Brand { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Required] 
+        public string Name { get; set; } = string.Empty;
+        
+        [System.ComponentModel.DataAnnotations.Required] 
+        public string Concentration { get; set; } = "EDP";
+        
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Please select an image.")] 
+        public Microsoft.AspNetCore.Components.Forms.IBrowserFile? Image { get; set; }
+    }
+
+    private NewPerfumeModel _newPerfume = new();
+    private string? _perfumeError;
+    private string? _perfumeSuccess;
+    private bool _isSubmittingPerfume;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadUsersAsync();
@@ -286,5 +361,35 @@
         {
             _error = error ?? "Failed to delete user.";
         }
+    }
+
+    private void HandleImageSelection(InputFileChangeEventArgs e)
+    {
+        _newPerfume.Image = e.File;
+    }
+
+    private async Task HandleAddPerfume()
+    {
+        _isSubmittingPerfume = true;
+        _perfumeError = null;
+        _perfumeSuccess = null;
+
+        var (success, error) = await ApiClient.CreatePerfumeAsync(
+            _newPerfume.Brand, 
+            _newPerfume.Name, 
+            _newPerfume.Concentration, 
+            _newPerfume.Image!);
+        
+        if (success)
+        {
+            _perfumeSuccess = $"Perfume '{_newPerfume.Brand} - {_newPerfume.Name}' successfully added!";
+            _newPerfume = new NewPerfumeModel();
+        }
+        else
+        {
+            _perfumeError = error ?? "Failed to add perfume.";
+        }
+
+        _isSubmittingPerfume = false;
     }
 }
