@@ -10,6 +10,8 @@ public sealed class Perfume
 
 	public string Concentration { get; init; } = string.Empty;
 
+    public string? ImageUrl { get; set; }
+
     public ICollection<Offer> Offers { get; init; } = new List<Offer>();
 
 	public string Describe() => $"{Id}:{Brand}:{Name}:{Concentration}";

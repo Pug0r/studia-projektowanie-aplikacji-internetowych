@@ -29,7 +29,14 @@ else
         {
             <div class="perfume-card">
                 <div class="perfume-card-image">
-                    <span class="perfume-placeholder-icon">🧴</span>
+                    @if (perfume.ImageUrl is not null)
+                    {
+                        <img src="@perfume.ImageUrl" alt="@perfume.Brand @perfume.Name" class="perfume-img" />
+                    }
+                    else
+                    {
+                        <span class="perfume-placeholder-icon">🧴</span>
+                    }
                 </div>
                 <div class="perfume-card-body">
                     <div class="perfume-brand">@perfume.Brand</div>

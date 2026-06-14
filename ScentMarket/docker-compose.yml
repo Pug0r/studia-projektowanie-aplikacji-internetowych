@@ -13,6 +13,23 @@ services:
       timeout: 5s
       retries: 10
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "9000:9000"   # S3 API — used by backend and browser for images
+      - "9001:9001"   # MinIO web console (http://localhost:9001)
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build:
       context: .
@@ -20,11 +37,18 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=database;Port=5432;Database=scentmarket;Username=admin;Password=admin
       Jwt__Key: "dev-scentmarket-secret-key-min32chars!!"
+      Minio__Endpoint: "minio:9000"
+      Minio__AccessKey: "minioadmin"
+      Minio__SecretKey: "minioadmin123"
+      Minio__BucketName: "scentmarket-images"
+      Minio__PublicEndpoint: "http://localhost:9000"
     ports:
       - "5109:8080"
 
@@ -37,3 +61,5 @@ services:
     ports:
       - "5059:80"
 
+volumes:
+  minio_data:
