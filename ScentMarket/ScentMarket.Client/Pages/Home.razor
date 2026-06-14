@@ -1,5 +1,5 @@
 ﻿@page "/"
-@inject HttpClient Http
+@inject ApiClient ApiClient
 
 <PageTitle>Home</PageTitle>
 
@@ -37,7 +37,9 @@ else
 	<table class="table">
 		<thead>
 		<tr>
+			<th>Brand</th>
 			<th>Name</th>
+			<th>Concentration</th>
 			<th>Id</th>
 		</tr>
 		</thead>
@@ -45,7 +47,9 @@ else
 		@foreach (var perfume in _perfumes)
 		{
 			<tr>
+				<td>@perfume.Brand</td>
 				<td>@perfume.Name</td>
+				<td>@perfume.Concentration</td>
 				<td><code>@perfume.Id</code></td>
 			</tr>
 		}
@@ -59,8 +63,8 @@ else
 
 	protected override async Task OnInitializedAsync()
 	{
-		var healthTask = Http.GetFromJsonAsync<BackendHealth>("/health");
-		var perfumesTask = Http.GetFromJsonAsync<Perfume[]>("/api/perfumes");
+		var healthTask = ApiClient.GetHealthAsync();
+		var perfumesTask = ApiClient.GetPerfumesAsync();
 
 		await Task.WhenAll(healthTask, perfumesTask);
 
