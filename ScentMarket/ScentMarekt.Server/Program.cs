@@ -1,3 +1,4 @@
+using Npgsql;
 using ScentMarket.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +34,27 @@ var perfumes = new[]
 
 app.MapGet("/api/perfumes", () => perfumes)
     .WithName("GetPerfumes");
+
+app.MapGet("/api/db-check", async (IConfiguration configuration) =>
+{
+    var connectionString = configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Missing connection string 'DefaultConnection'.");
+
+    await using var connection = new NpgsqlConnection(connectionString);
+    await connection.OpenAsync();
+
+    await using var command = new NpgsqlCommand("SELECT 1", connection);
+    var result = await command.ExecuteScalarAsync();
+
+    return Results.Ok(new
+    {
+        connected = true,
+        database = connection.Database,
+        serverVersion = connection.PostgreSqlVersion.ToString(),
+        probe = result
+    });
+})
+    .WithName("CheckDatabaseConnection");
 
 app.Run();
 
