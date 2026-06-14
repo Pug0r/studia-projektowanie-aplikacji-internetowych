@@ -9,4 +9,6 @@ public sealed class OfferListItemDto
     public DateTime CreatedAt { get; init; }
     public ContactInfoDto ContactInfo { get; init; } = new();
     public List<OfferPriceSummary> Prices { get; init; } = [];
+    public double SellerAverageRating { get; init; }
+    public int SellerReviewCount { get; init; }
 }

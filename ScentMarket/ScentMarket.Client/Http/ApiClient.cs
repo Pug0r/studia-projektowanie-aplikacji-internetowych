@@ -132,6 +132,28 @@ public class ApiClient
         return response.IsSuccessStatusCode;
     }
 
+    // ── Reviews ──────────────────────────────────────────────────────────────
+
+    public async Task<(bool success, string? error)> SubmitReviewAsync(CreateReviewRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PostAsJsonAsync("api/reviews", request);
+        
+        if (response.IsSuccessStatusCode)
+            return (true, null);
+            
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (false, msg);
+        }
+        catch
+        {
+            return (false, response.ReasonPhrase);
+        }
+    }
+
     // ── Profile ──────────────────────────────────────────────────────────────
 
     public async Task<UserProfileDto?> GetProfileAsync()

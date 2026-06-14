@@ -91,6 +91,37 @@
         }
     }
 
+    private Dictionary<Guid, CreateReviewRequest> _reviewDrafts = new();
+
+    private void StartReview(Guid transactionId)
+    {
+        if (!_reviewDrafts.ContainsKey(transactionId))
+        {
+            _reviewDrafts[transactionId] = new CreateReviewRequest { TransactionId = transactionId, Rating = 5 };
+        }
+    }
+
+    private void SetRating(Guid transactionId, int rating)
+    {
+        if (_reviewDrafts.TryGetValue(transactionId, out var draft))
+        {
+            draft.Rating = rating;
+        }
+    }
+
+    private async Task SubmitReview(Guid transactionId)
+    {
+        if (_reviewDrafts.TryGetValue(transactionId, out var draft))
+        {
+            var (success, error) = await ApiClient.SubmitReviewAsync(draft);
+            if (success)
+            {
+                _reviewDrafts.Remove(transactionId);
+                await LoadTransactionsAsync();
+            }
+        }
+    }
+
     private RenderFragment RenderTransactionCard(TransactionDto t) => __builder =>
     {
         bool amBuyer = t.BuyerId == _myUserId;
@@ -139,6 +170,53 @@
                         <button class="btn-confirm" @onclick="() => UpdateStatus(t.Id, TransactionStatus.Completed)">Confirm Sale</button>
                     }
                     <button class="btn-cancel" @onclick="() => UpdateStatus(t.Id, TransactionStatus.Cancelled)">Cancel</button>
+                </div>
+            }
+            else if (t.Status == TransactionStatus.Completed)
+            {
+                <div class="t-review-section">
+                    @if (t.ReviewRating.HasValue)
+                    {
+                        <div class="t-review-given">
+                            <div class="t-review-label">@(amBuyer ? "Your Review:" : "Buyer's Review:")</div>
+                            <div class="t-stars static-stars">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span class="star @(i <= t.ReviewRating.Value ? "filled" : "")">★</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(t.ReviewComment))
+                            {
+                                <div class="t-review-comment">"@t.ReviewComment"</div>
+                            }
+                        </div>
+                    }
+                    else if (amBuyer)
+                    {
+                        if (_reviewDrafts.TryGetValue(t.Id, out var draft))
+                        {
+                            <div class="t-review-form">
+                                <div class="t-review-label">Rate the seller:</div>
+                                <div class="t-stars interactive-stars">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        var currentRating = i;
+                                        <span class="star @(currentRating <= draft.Rating ? "filled" : "")" 
+                                              @onclick="() => SetRating(t.Id, currentRating)">★</span>
+                                    }
+                                </div>
+                                <textarea placeholder="Leave a comment (optional)..." @bind="draft.Comment"></textarea>
+                                <div class="t-review-actions">
+                                    <button class="btn-cancel" @onclick="() => _reviewDrafts.Remove(t.Id)">Cancel</button>
+                                    <button class="btn-confirm" @onclick="() => SubmitReview(t.Id)">Submit</button>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <button class="btn-review" @onclick="() => StartReview(t.Id)">⭐ Leave a Review</button>
+                        }
+                    }
                 </div>
             }
             

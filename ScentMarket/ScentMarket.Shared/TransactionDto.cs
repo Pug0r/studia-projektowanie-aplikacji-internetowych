@@ -17,4 +17,7 @@ public sealed class TransactionDto
     public DateTime CreatedAt { get; init; }
     public ContactInfoDto SellerContactInfo { get; set; } = new();
     public ContactInfoDto BuyerContactInfo { get; set; } = new();
+
+    public int? ReviewRating { get; set; }
+    public string? ReviewComment { get; set; }
 }

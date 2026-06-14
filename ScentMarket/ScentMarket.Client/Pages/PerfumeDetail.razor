@@ -88,6 +88,13 @@ else
                             <div class="offer-seller">
                                 <span class="seller-icon">👤</span>
                                 <span class="seller-name">@offer.SellerUsername</span>
+                                @if (offer.SellerReviewCount > 0)
+                                {
+                                    <span class="seller-rating" style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--gold);">
+                                        ⭐ @offer.SellerAverageRating
+                                        <span style="color: var(--text-muted); font-size: 0.8rem;">(@offer.SellerReviewCount)</span>
+                                    </span>
+                                }
                             </div>
                             <div class="offer-volume">@offer.AvailableVolumeMl ml available</div>
                         </div>

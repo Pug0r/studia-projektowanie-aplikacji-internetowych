@@ -173,7 +173,12 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
                             CapacityMl = p.CapacityMl,
                             Price      = p.Price
                         })
-                        .ToList()
+                        .ToList(),
+                    SellerAverageRating = Math.Round(
+                        o.Seller.ReceivedReviews.Count > 0 
+                            ? o.Seller.ReceivedReviews.Average(r => r.Rating) 
+                            : 0, 1),
+                    SellerReviewCount = o.Seller.ReceivedReviews.Count
                 })
                 .ToList()
         })
@@ -187,9 +192,16 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
 app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext db) =>
 {
     var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+    var user = await db.Users
+        .Include(u => u.ReceivedReviews)
+            .ThenInclude(r => r.Reviewer)
+        .AsNoTracking()
+        .FirstOrDefaultAsync(u => u.Id == userId);
     
     if (user is null) return Results.NotFound();
+
+    var reviewCount = user.ReceivedReviews.Count;
+    var averageRating = reviewCount > 0 ? user.ReceivedReviews.Average(r => r.Rating) : 0;
 
     return Results.Ok(new UserProfileDto
     {
@@ -200,7 +212,19 @@ app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext d
         WhatsApp = user.WhatsApp,
         Messenger = user.Messenger,
         Role = user.Role.ToString(),
-        CreatedAt = user.CreatedAt
+        CreatedAt = user.CreatedAt,
+        ReviewCount = reviewCount,
+        AverageRating = Math.Round(averageRating, 1),
+        Reviews = user.ReceivedReviews
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new UserReviewDto
+            {
+                Rating = r.Rating,
+                Comment = r.Comment,
+                ReviewerUsername = r.Reviewer.Username,
+                CreatedAt = r.CreatedAt
+            })
+            .ToList()
     });
 })
 .WithName("GetProfile")
@@ -280,7 +304,13 @@ app.MapGet("/api/transactions", async (ClaimsPrincipal user, AppDbContext db) =>
                 Phone = t.Buyer.Phone,
                 WhatsApp = t.Buyer.WhatsApp,
                 Messenger = t.Buyer.Messenger
-            }
+            },
+            ReviewRating = t.Reviews
+                .Select(r => (int?)r.Rating)
+                .FirstOrDefault(),
+            ReviewComment = t.Reviews
+                .Select(r => r.Comment)
+                .FirstOrDefault()
         })
         .ToListAsync();
 
@@ -368,6 +398,55 @@ app.MapPut("/api/transactions/{id:guid}/status", async (Guid id, UpdateStatusReq
     return Results.Ok();
 })
 .WithName("UpdateTransactionStatus")
+.RequireAuthorization();
+
+app.MapPost("/api/reviews", async (CreateReviewRequest request, ClaimsPrincipal user, AppDbContext db) =>
+{
+    var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    var transaction = await db.Transactions
+        .Include(t => t.Offer)
+        .FirstOrDefaultAsync(t => t.Id == request.TransactionId);
+
+    if (transaction is null)
+    {
+        return Results.NotFound();
+    }
+
+    if (transaction.BuyerId != userId)
+    {
+        return Results.Forbid();
+    }
+
+    if (transaction.Status != TransactionStatus.Completed)
+    {
+        return Results.BadRequest(new { message = "Can only review completed transactions." });
+    }
+
+    var existingReview = await db.Reviews
+        .AnyAsync(r => r.TransactionId == request.TransactionId && r.ReviewerId == userId);
+
+    if (existingReview)
+    {
+        return Results.BadRequest(new { message = "You have already reviewed this transaction." });
+    }
+
+    var review = new Review
+    {
+        TransactionId = request.TransactionId,
+        ReviewerId = userId,
+        RevieweeId = transaction.Offer.SellerId,
+        Rating = request.Rating,
+        Comment = request.Comment,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    db.Reviews.Add(review);
+    await db.SaveChangesAsync();
+
+    return Results.Ok();
+})
+.WithName("CreateReview")
 .RequireAuthorization();
 
 app.MapGet("/health", async (AppDbContext db) =>

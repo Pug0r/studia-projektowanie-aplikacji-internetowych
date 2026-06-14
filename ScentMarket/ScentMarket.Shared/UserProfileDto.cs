@@ -10,4 +10,9 @@ public sealed class UserProfileDto
     public string? Messenger { get; init; }
     public string Role { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
+    
+    public double AverageRating { get; set; }
+    public int ReviewCount { get; set; }
+
+    public List<UserReviewDto> Reviews { get; init; } = [];
 }
