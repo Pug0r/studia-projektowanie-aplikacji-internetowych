@@ -753,4 +753,55 @@ app.MapDelete("/api/users/{id:guid}", async (Guid id, ClaimsPrincipal userPrinci
     .WithTags("Admin")
     .RequireAuthorization(policy => policy.RequireRole("Admin"));
 
+app.MapPost("/api/perfumes/cache/reload", async (AppDbContext db, IMemoryCache cache) =>
+{
+    var allPerfumes = await db.Perfumes
+        .AsNoTracking()
+        .Select(p => new Perfume
+        {
+            Id            = p.Id,
+            Brand         = p.Brand,
+            Name          = p.Name,
+            Concentration = p.Concentration,
+            ImageUrl      = p.ImageUrl,
+            MinPrice      = p.Offers
+                .Where(o => o.IsActive)
+                .SelectMany(o => o.Prices)
+                .Select(pr => (decimal?)pr.Price)
+                .Min()
+        })
+        .ToListAsync();
+
+    cache.Set("all_perfumes", allPerfumes);
+    return Results.Ok(new { message = "Cache reloaded", count = allPerfumes.Count });
+})
+    .WithName("ReloadPerfumeCache")
+    .WithTags("Admin")
+    .RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var cache = scope.ServiceProvider.GetRequiredService<IMemoryCache>();
+    
+    var allPerfumes = db.Perfumes
+        .AsNoTracking()
+        .Select(p => new Perfume
+        {
+            Id            = p.Id,
+            Brand         = p.Brand,
+            Name          = p.Name,
+            Concentration = p.Concentration,
+            ImageUrl      = p.ImageUrl,
+            MinPrice      = p.Offers
+                .Where(o => o.IsActive)
+                .SelectMany(o => o.Prices)
+                .Select(pr => (decimal?)pr.Price)
+                .Min()
+        })
+        .ToList();
+
+    cache.Set("all_perfumes", allPerfumes);
+}
+
 app.Run();

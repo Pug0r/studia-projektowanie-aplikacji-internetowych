@@ -89,6 +89,37 @@ public class ApiClient
         }
     }
 
+    public async Task<(bool success, string? error, int count)> ReloadPerfumeCacheAsync()
+    {
+        await AttachTokenAsync();
+        var response = await _http.PostAsync("api/perfumes/cache/reload", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            try
+            {
+                var result = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+                var count = result.TryGetProperty("count", out var c) ? c.GetInt32() : 0;
+                return (true, null, count);
+            }
+            catch
+            {
+                return (true, null, 0);
+            }
+        }
+
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (false, msg, 0);
+        }
+        catch
+        {
+            return (false, response.ReasonPhrase, 0);
+        }
+    }
+
     // ── Offers ───────────────────────────────────────────────────────────────
 
     public async Task<List<MyOfferDto>> GetMyOffersAsync()
