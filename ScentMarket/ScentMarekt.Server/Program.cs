@@ -135,7 +135,8 @@ app.MapGet("/api/perfumes", async (AppDbContext db, int page = 1, int pageSize =
         TotalCount = totalCount
     });
 })
-    .WithName("GetPerfumes");
+    .WithName("GetPerfumes")
+    .WithTags("Perfumes");
 
 app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
 {
@@ -187,6 +188,7 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
     return perfume is null ? Results.NotFound() : Results.Ok(perfume);
 })
     .WithName("GetPerfumeDetail")
+    .WithTags("Perfumes")
     .RequireAuthorization();
 
 app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext db) =>
@@ -228,6 +230,7 @@ app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext d
     });
 })
 .WithName("GetProfile")
+.WithTags("Account")
 .RequireAuthorization();
 
 app.MapPut("/api/users/me", async (UpdateProfileRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
@@ -246,6 +249,7 @@ app.MapPut("/api/users/me", async (UpdateProfileRequest request, ClaimsPrincipal
     return Results.Ok();
 })
 .WithName("UpdateProfile")
+.WithTags("Account")
 .RequireAuthorization();
 
 app.MapPut("/api/users/me/password", async (UpdatePasswordRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
@@ -266,6 +270,7 @@ app.MapPut("/api/users/me/password", async (UpdatePasswordRequest request, Claim
     return Results.Ok();
 })
 .WithName("UpdatePassword")
+.WithTags("Account")
 .RequireAuthorization();
 
 app.MapGet("/api/transactions", async (ClaimsPrincipal user, AppDbContext db) =>
@@ -317,6 +322,7 @@ app.MapGet("/api/transactions", async (ClaimsPrincipal user, AppDbContext db) =>
     return Results.Ok(transactions);
 })
 .WithName("GetTransactions")
+.WithTags("Transactions")
 .RequireAuthorization();
 
 app.MapPost("/api/transactions", async (CreateTransactionRequest request, ClaimsPrincipal user, AppDbContext db) =>
@@ -363,6 +369,7 @@ app.MapPost("/api/transactions", async (CreateTransactionRequest request, Claims
     return Results.Ok(new { transaction.Id });
 })
 .WithName("CreateTransaction")
+.WithTags("Transactions")
 .RequireAuthorization();
 
 app.MapPut("/api/transactions/{id:guid}/status", async (Guid id, UpdateStatusRequest request, ClaimsPrincipal user, AppDbContext db) =>
@@ -398,6 +405,7 @@ app.MapPut("/api/transactions/{id:guid}/status", async (Guid id, UpdateStatusReq
     return Results.Ok();
 })
 .WithName("UpdateTransactionStatus")
+.WithTags("Transactions")
 .RequireAuthorization();
 
 app.MapPost("/api/reviews", async (CreateReviewRequest request, ClaimsPrincipal user, AppDbContext db) =>
@@ -447,6 +455,7 @@ app.MapPost("/api/reviews", async (CreateReviewRequest request, ClaimsPrincipal 
     return Results.Ok();
 })
 .WithName("CreateReview")
+.WithTags("Reviews")
 .RequireAuthorization();
 
 app.MapGet("/health", async (AppDbContext db) =>
@@ -478,7 +487,8 @@ app.MapGet("/health", async (AppDbContext db) =>
         await db.Database.CloseConnectionAsync();
     }
 })
-    .WithName("GetHealth");
+    .WithName("GetHealth")
+    .WithTags("System");
 
 app.MapPost("/api/auth/register", async (RegisterRequest request, AuthService auth) =>
 {
@@ -487,7 +497,8 @@ app.MapPost("/api/auth/register", async (RegisterRequest request, AuthService au
         ? Results.Conflict(new { message = "Username is already taken." })
         : Results.Ok(response);
 })
-    .WithName("Register");
+    .WithName("Register")
+    .WithTags("Authorization");
 
 app.MapPost("/api/auth/login", async (LoginRequest request, AuthService auth) =>
 {
@@ -496,7 +507,8 @@ app.MapPost("/api/auth/login", async (LoginRequest request, AuthService auth) =>
         ? Results.Unauthorized()
         : Results.Ok(response);
 })
-    .WithName("Login");
+    .WithName("Login")
+    .WithTags("Authorization");
 
 // ── Offers ───────────────────────────────────────────────────────────────────
 
@@ -536,6 +548,7 @@ app.MapGet("/api/offers/my", async (ClaimsPrincipal user, AppDbContext db) =>
     return Results.Ok(offers);
 })
     .WithName("GetMyOffers")
+    .WithTags("Offers")
     .RequireAuthorization();
 
 app.MapPost("/api/offers", async (ClaimsPrincipal user, AppDbContext db, CreateOfferRequest request) =>
@@ -604,6 +617,7 @@ app.MapPost("/api/offers", async (ClaimsPrincipal user, AppDbContext db, CreateO
     return Results.Ok(dto);
 })
     .WithName("CreateOffer")
+    .WithTags("Offers")
     .RequireAuthorization();
 
 app.Run();
