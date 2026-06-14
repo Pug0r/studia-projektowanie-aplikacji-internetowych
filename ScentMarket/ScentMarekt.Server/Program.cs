@@ -231,6 +231,8 @@ app.MapPost("/api/perfumes", async (
     db.Perfumes.Add(perfume);
     await db.SaveChangesAsync();
 
+    app.Logger.LogInformation("New perfume defined: {Brand} {Name} ({PerfumeId})", perfume.Brand, perfume.Name, perfume.Id);
+
     return Results.Ok(new { id = perfume.Id, imageUrl = url });
 })
 .WithName("CreatePerfume")
@@ -299,6 +301,9 @@ app.MapPut("/api/users/{id:guid}", async (Guid id, UpdateProfileRequest request,
     user.Messenger = request.Messenger;
 
     await db.SaveChangesAsync();
+
+    app.Logger.LogInformation("User profile updated: {UserId} by caller {CallerId}", id, callerId);
+
     return Results.Ok();
 })
 .WithName("UpdateProfile")
@@ -327,6 +332,9 @@ app.MapPut("/api/users/{id:guid}/password", async (Guid id, UpdatePasswordReques
     user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
     
     await db.SaveChangesAsync();
+
+    app.Logger.LogInformation("User password updated: {UserId} by caller {CallerId}", id, callerId);
+
     return Results.Ok();
 })
 .WithName("UpdatePassword")
@@ -426,6 +434,8 @@ app.MapPost("/api/transactions", async (CreateTransactionRequest request, Claims
     db.Transactions.Add(transaction);
     await db.SaveChangesAsync();
     
+    app.Logger.LogInformation("New transaction created: {TransactionId} by buyer {BuyerId} for offer {OfferId}", transaction.Id, buyerId, offer.Id);
+
     return Results.Ok(new { transaction.Id });
 })
 .WithName("CreateTransaction")
@@ -462,6 +472,8 @@ app.MapPut("/api/transactions/{id:guid}/status", async (Guid id, UpdateStatusReq
     transaction.Status = request.Status;
     await db.SaveChangesAsync();
     
+    app.Logger.LogInformation("Transaction {TransactionId} status updated to {Status} by user {UserId}", transaction.Id, request.Status, userId);
+
     return Results.Ok();
 })
 .WithName("UpdateTransactionStatus")
@@ -511,6 +523,8 @@ app.MapPost("/api/reviews", async (CreateReviewRequest request, ClaimsPrincipal 
 
     db.Reviews.Add(review);
     await db.SaveChangesAsync();
+
+    app.Logger.LogInformation("Review submitted for transaction {TransactionId} by reviewer {ReviewerId} with rating {Rating}", request.TransactionId, userId, request.Rating);
 
     return Results.Ok();
 })
@@ -662,6 +676,8 @@ app.MapPost("/api/offers", async (ClaimsPrincipal user, AppDbContext db, CreateO
     db.Offers.Add(offer);
     await db.SaveChangesAsync();
 
+    app.Logger.LogInformation("New offer created: {OfferId} by seller {SellerId} for perfume {PerfumeId}", offer.Id, userId, request.PerfumeId);
+
     var dto = new MyOfferDto
     {
         Id                   = offer.Id,
@@ -729,6 +745,8 @@ app.MapPost("/api/users", async (AdminCreateUserRequest request, AppDbContext db
     db.Users.Add(user);
     await db.SaveChangesAsync();
 
+    app.Logger.LogInformation("Admin created new user: {Username} ({UserId})", user.Username, user.Id);
+
     return Results.Ok(new AdminUserDto
     {
         Id = user.Id,
@@ -753,6 +771,8 @@ app.MapDelete("/api/users/{id:guid}", async (Guid id, ClaimsPrincipal userPrinci
 
     db.Users.Remove(user);
     await db.SaveChangesAsync();
+
+    app.Logger.LogInformation("Admin deleted user: {UserId} by admin {AdminId}", id, callerId);
 
     return Results.Ok();
 })
@@ -780,6 +800,9 @@ app.MapPost("/api/perfumes/cache/reload", async (AppDbContext db, IMemoryCache c
         .ToListAsync();
 
     cache.Set("all_perfumes", allPerfumes);
+
+    app.Logger.LogInformation("Perfume cache explicitly reloaded by Admin. New count: {Count}", allPerfumes.Count);
+
     return Results.Ok(new { message = "Cache reloaded", count = allPerfumes.Count });
 })
     .WithName("ReloadPerfumeCache")

@@ -12,11 +12,13 @@ public sealed class AuthService
 {
     private readonly AppDbContext _db;
     private readonly IConfiguration _config;
+    private readonly ILogger<AuthService> _logger;
 
-    public AuthService(AppDbContext db, IConfiguration config)
+    public AuthService(AppDbContext db, IConfiguration config, ILogger<AuthService> logger)
     {
         _db = db;
         _config = config;
+        _logger = logger;
     }
 
     public async Task<AuthResponse?> RegisterAsync(RegisterRequest request)
@@ -42,6 +44,8 @@ public sealed class AuthService
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
+        _logger.LogInformation("New user registered: {Username} ({UserId})", user.Username, user.Id);
+
         return new AuthResponse { Token = GenerateToken(user) };
     }
 
@@ -53,8 +57,11 @@ public sealed class AuthService
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
+            _logger.LogWarning("Failed login attempt for username: {Username}", request.Username);
             return null; // caller maps this to 401 Unauthorized
         }
+
+        _logger.LogInformation("User logged in successfully: {Username} ({UserId})", user.Username, user.Id);
 
         return new AuthResponse { Token = GenerateToken(user) };
     }
