@@ -191,14 +191,13 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
     .WithTags("Perfumes")
     .RequireAuthorization();
 
-app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext db) =>
+app.MapGet("/api/users/{id:guid}", async (Guid id, AppDbContext db) =>
 {
-    var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
     var user = await db.Users
         .Include(u => u.ReceivedReviews)
             .ThenInclude(r => r.Reviewer)
         .AsNoTracking()
-        .FirstOrDefaultAsync(u => u.Id == userId);
+        .FirstOrDefaultAsync(u => u.Id == id);
     
     if (user is null) return Results.NotFound();
 
@@ -233,10 +232,17 @@ app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext d
 .WithTags("Account")
 .RequireAuthorization();
 
-app.MapPut("/api/users/me", async (UpdateProfileRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
+app.MapPut("/api/users/{id:guid}", async (Guid id, UpdateProfileRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
 {
-    var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    var callerId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    var callerRole = userPrincipal.FindFirstValue(ClaimTypes.Role);
+
+    if (callerRole != "Admin" && callerId != id)
+    {
+        return Results.Forbid();
+    }
+
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id);
     
     if (user is null) return Results.NotFound();
 
@@ -252,10 +258,17 @@ app.MapPut("/api/users/me", async (UpdateProfileRequest request, ClaimsPrincipal
 .WithTags("Account")
 .RequireAuthorization();
 
-app.MapPut("/api/users/me/password", async (UpdatePasswordRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
+app.MapPut("/api/users/{id:guid}/password", async (Guid id, UpdatePasswordRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
 {
-    var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    var callerId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    var callerRole = userPrincipal.FindFirstValue(ClaimTypes.Role);
+
+    if (callerRole != "Admin" && callerId != id)
+    {
+        return Results.Forbid();
+    }
+
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == id);
     
     if (user is null) return Results.NotFound();
 
@@ -512,13 +525,11 @@ app.MapPost("/api/auth/login", async (LoginRequest request, AuthService auth) =>
 
 // ── Offers ───────────────────────────────────────────────────────────────────
 
-app.MapGet("/api/offers/my", async (ClaimsPrincipal user, AppDbContext db) =>
+app.MapGet("/api/users/{id:guid}/offers", async (Guid id, AppDbContext db) =>
 {
-    var userId = Guid.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
     var offers = await db.Offers
-        .AsNoTracking()
-        .Where(o => o.SellerId == userId)
+        .Include(o => o.Prices)
+        .Where(o => o.SellerId == id)
         .Include(o => o.Perfume)
         .Include(o => o.Prices)
         .OrderByDescending(o => o.CreatedAt)
@@ -547,9 +558,9 @@ app.MapGet("/api/offers/my", async (ClaimsPrincipal user, AppDbContext db) =>
 
     return Results.Ok(offers);
 })
-    .WithName("GetMyOffers")
-    .WithTags("Offers")
-    .RequireAuthorization();
+    .WithName("GetUserOffers")
+    .WithTags("Offers");
+
 
 app.MapPost("/api/offers", async (ClaimsPrincipal user, AppDbContext db, CreateOfferRequest request) =>
 {

@@ -62,8 +62,10 @@ public class ApiClient
 
     public async Task<List<MyOfferDto>> GetMyOffersAsync()
     {
+        var userId = await GetMyUserIdAsync();
+        if (userId == null) return [];
         await AttachTokenAsync();
-        return await _http.GetFromJsonAsync<List<MyOfferDto>>("api/offers/my") ?? [];
+        return await _http.GetFromJsonAsync<List<MyOfferDto>>($"api/users/{userId}/offers") ?? [];
     }
 
     public async Task<(MyOfferDto? dto, string? error)> CreateOfferAsync(CreateOfferRequest request)
@@ -158,21 +160,27 @@ public class ApiClient
 
     public async Task<UserProfileDto?> GetProfileAsync()
     {
+        var userId = await GetMyUserIdAsync();
+        if (userId == null) return null;
         await AttachTokenAsync();
-        return await _http.GetFromJsonAsync<UserProfileDto>("api/users/me");
+        return await _http.GetFromJsonAsync<UserProfileDto>($"api/users/{userId}");
     }
 
     public async Task<bool> UpdateProfileAsync(UpdateProfileRequest request)
     {
+        var userId = await GetMyUserIdAsync();
+        if (userId == null) return false;
         await AttachTokenAsync();
-        var response = await _http.PutAsJsonAsync("api/users/me", request);
+        var response = await _http.PutAsJsonAsync($"api/users/{userId}", request);
         return response.IsSuccessStatusCode;
     }
 
     public async Task<(bool success, string? error)> UpdatePasswordAsync(UpdatePasswordRequest request)
     {
+        var userId = await GetMyUserIdAsync();
+        if (userId == null) return (false, "Not authenticated.");
         await AttachTokenAsync();
-        var response = await _http.PutAsJsonAsync("api/users/me/password", request);
+        var response = await _http.PutAsJsonAsync($"api/users/{userId}/password", request);
         
         if (response.IsSuccessStatusCode)
             return (true, null);
@@ -190,6 +198,13 @@ public class ApiClient
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private async Task<Guid?> GetMyUserIdAsync()
+    {
+        var authState = await _authState.GetAuthenticationStateAsync();
+        var sub = authState.User.FindFirst("sub")?.Value;
+        return Guid.TryParse(sub, out var id) ? id : null;
+    }
 
 
     private async Task AttachTokenAsync()
