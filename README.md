@@ -4,25 +4,26 @@ TODO
 - [x] plan dzialania
 - [x] ADR (6 wpisow)
 - [x] Opis projektu + diagram architektury
-- [ ] Baza
-    - [ ] kontener
-    - [ ] plan schematu
+- [x] Baza
+    - [x] kontener
+    - [x] plan schematu
 - [ ] Backend
-    - [ ] kontener
-    - [ ] migracje
-    - [ ] wpiecie ORMa
-    - [ ] data seed
+    - [x] kontener
+    - [x] migracje
+    - [x] wpiecie ORMa
+    - [x] data seed
     - [ ] role
     - [ ] endpointy
     - [ ]* memorycache
-    - [ ]* health
+    - [x]* health
     - [ ]* walidacje danych
 - [ ] Frontend
     - [ ] logowanie
     - [ ] widok glowny
     - [ ] widok konta
     - [ ] widok admina
-- [ ] docker compose + testy calosci   
+- [x] docker compose 
+- [ ] testy calosci   
 
 # Opis projektu
 
