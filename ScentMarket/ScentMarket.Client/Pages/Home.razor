@@ -1,74 +1,86 @@
-﻿@page "/"
+@page "/"
+@attribute [Authorize]
 @inject ApiClient ApiClient
+@inject AuthStateProvider AuthStateProvider
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<PageTitle>ScentMarket — Home</PageTitle>
 
-<h1>ScentMarket</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>ScentMarket</h1>
+    <button class="btn btn-outline-secondary btn-sm" @onclick="LogoutAsync">Sign out</button>
+</div>
 
 <p>Available perfumes from the server.</p>
 
 <div class="mb-3">
-	@if (_health is null)
-	{
-		<p><em>Checking backend health...</em></p>
-	}
-	else if (_health.Healthy)
-	{
-		<p class="text-success mb-0">
-			Backend healthy: @_health.Message
-			@if (!string.IsNullOrWhiteSpace(_health.Database))
-			{
-				<span>(@_health.Database @_health.ServerVersion)</span>
-			}
-		</p>
-	}
-	else
-	{
-		<p class="text-danger mb-0">Backend unhealthy: @_health.Message</p>
-	}
+    @if (_health is null)
+    {
+        <p><em>Checking backend health...</em></p>
+    }
+    else if (_health.Healthy)
+    {
+        <p class="text-success mb-0">
+            Backend healthy: @_health.Message
+            @if (!string.IsNullOrWhiteSpace(_health.Database))
+            {
+                <span>(@_health.Database @_health.ServerVersion)</span>
+            }
+        </p>
+    }
+    else
+    {
+        <p class="text-danger mb-0">Backend unhealthy: @_health.Message</p>
+    }
 </div>
 
 @if (_perfumes is null)
 {
-	<p><em>Loading...</em></p>
+    <p><em>Loading...</em></p>
 }
 else
 {
-	<table class="table">
-		<thead>
-		<tr>
-			<th>Brand</th>
-			<th>Name</th>
-			<th>Concentration</th>
-			<th>Id</th>
-		</tr>
-		</thead>
-		<tbody>
-		@foreach (var perfume in _perfumes)
-		{
-			<tr>
-				<td>@perfume.Brand</td>
-				<td>@perfume.Name</td>
-				<td>@perfume.Concentration</td>
-				<td><code>@perfume.Id</code></td>
-			</tr>
-		}
-		</tbody>
-	</table>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Brand</th>
+            <th>Name</th>
+            <th>Concentration</th>
+            <th>Id</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var perfume in _perfumes)
+        {
+            <tr>
+                <td>@perfume.Brand</td>
+                <td>@perfume.Name</td>
+                <td>@perfume.Concentration</td>
+                <td><code>@perfume.Id</code></td>
+            </tr>
+        }
+        </tbody>
+    </table>
 }
 
 @code {
-	private Perfume[]? _perfumes;
-	private BackendHealth? _health;
+    private Perfume[]? _perfumes;
+    private BackendHealth? _health;
 
-	protected override async Task OnInitializedAsync()
-	{
-		var healthTask = ApiClient.GetHealthAsync();
-		var perfumesTask = ApiClient.GetPerfumesAsync();
+    protected override async Task OnInitializedAsync()
+    {
+        var healthTask = ApiClient.GetHealthAsync();
+        var perfumesTask = ApiClient.GetPerfumesAsync();
 
-		await Task.WhenAll(healthTask, perfumesTask);
+        await Task.WhenAll(healthTask, perfumesTask);
 
-		_health = await healthTask;
-		_perfumes = await perfumesTask;
-	}
+        _health = await healthTask;
+        _perfumes = await perfumesTask;
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthStateProvider.NotifyUserLoggedOutAsync();
+        Nav.NavigateTo("/login");
+    }
 }

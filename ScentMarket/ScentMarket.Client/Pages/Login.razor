@@ -1,0 +1,132 @@
+@page "/login"
+@layout EmptyLayout
+@inject ApiClient ApiClient
+@inject AuthStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<PageTitle>ScentMarket — Sign In</PageTitle>
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <h1 class="login-title">🧴 ScentMarket</h1>
+        <p class="login-subtitle">Premium perfume decants marketplace</p>
+
+        <div class="tab-bar">
+            <button class="tab-btn @(_tab == "login" ? "active" : "")"
+                    @onclick='() => SwitchTab("login")'>Sign In</button>
+            <button class="tab-btn @(_tab == "register" ? "active" : "")"
+                    @onclick='() => SwitchTab("register")'>Register</button>
+        </div>
+
+        @if (_tab == "login")
+        {
+            <EditForm Model="_loginModel" OnValidSubmit="HandleLoginAsync">
+                <DataAnnotationsValidator />
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <InputText id="login-username" class="form-control" @bind-Value="_loginModel.Username"
+                               placeholder="Enter your username" autocomplete="username" />
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <InputText id="login-password" class="form-control" type="password"
+                               @bind-Value="_loginModel.Password"
+                               placeholder="Enter your password" autocomplete="current-password" />
+                </div>
+                @if (_errorMessage is not null)
+                {
+                    <div class="alert alert-danger py-2">@_errorMessage</div>
+                }
+                <button type="submit" class="btn-primary-full" disabled="@_loading">
+                    @if (_loading) { <span>Signing in…</span> } else { <span>Sign In</span> }
+                </button>
+            </EditForm>
+        }
+        else
+        {
+            <EditForm Model="_registerModel" OnValidSubmit="HandleRegisterAsync">
+                <DataAnnotationsValidator />
+                <div class="form-group">
+                    <label for="reg-username">Username</label>
+                    <InputText id="reg-username" class="form-control" @bind-Value="_registerModel.Username"
+                               placeholder="Choose a username" autocomplete="username" />
+                </div>
+                <div class="form-group">
+                    <label for="reg-password">Password</label>
+                    <InputText id="reg-password" class="form-control" type="password"
+                               @bind-Value="_registerModel.Password"
+                               placeholder="Choose a password" autocomplete="new-password" />
+                </div>
+                @if (_errorMessage is not null)
+                {
+                    <div class="alert alert-danger py-2">@_errorMessage</div>
+                }
+                <button type="submit" class="btn-primary-full" disabled="@_loading">
+                    @if (_loading) { <span>Creating account…</span> } else { <span>Create Account</span> }
+                </button>
+            </EditForm>
+        }
+    </div>
+</div>
+
+@code {
+    private string _tab = "login";
+    private readonly LoginRequest _loginModel = new();
+    private readonly RegisterRequest _registerModel = new();
+    private string? _errorMessage;
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Already logged in? Go straight to home.
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+            Nav.NavigateTo("/");
+    }
+
+    private void SwitchTab(string tab)
+    {
+        _tab = tab;
+        _errorMessage = null;
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+
+        var response = await ApiClient.LoginAsync(_loginModel);
+
+        if (response is null)
+        {
+            _errorMessage = "Invalid username or password.";
+        }
+        else
+        {
+            await AuthStateProvider.NotifyUserLoggedInAsync(response.Token);
+            Nav.NavigateTo("/");
+        }
+
+        _loading = false;
+    }
+
+    private async Task HandleRegisterAsync()
+    {
+        _loading = true;
+        _errorMessage = null;
+
+        var response = await ApiClient.RegisterAsync(_registerModel);
+
+        if (response is null)
+        {
+            _errorMessage = "Username is already taken. Please choose another.";
+        }
+        else
+        {
+            await AuthStateProvider.NotifyUserLoggedInAsync(response.Token);
+            Nav.NavigateTo("/");
+        }
+
+        _loading = false;
+    }
+}
