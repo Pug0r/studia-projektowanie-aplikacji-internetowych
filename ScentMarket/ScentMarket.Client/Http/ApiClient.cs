@@ -197,6 +197,54 @@ public class ApiClient
         }
     }
 
+    // ── Admin Users ──────────────────────────────────────────────────────────
+
+    public async Task<List<AdminUserDto>> GetUsersAsync()
+    {
+        await AttachTokenAsync();
+        return await _http.GetFromJsonAsync<List<AdminUserDto>>("api/users") ?? [];
+    }
+
+    public async Task<(bool success, string? error)> CreateUserAsync(AdminCreateUserRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PostAsJsonAsync("api/users", request);
+        
+        if (response.IsSuccessStatusCode)
+            return (true, null);
+            
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (false, msg);
+        }
+        catch
+        {
+            return (false, response.ReasonPhrase);
+        }
+    }
+
+    public async Task<(bool success, string? error)> DeleteUserAsync(Guid id)
+    {
+        await AttachTokenAsync();
+        var response = await _http.DeleteAsync($"api/users/{id}");
+        
+        if (response.IsSuccessStatusCode)
+            return (true, null);
+
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (false, msg);
+        }
+        catch
+        {
+            return (false, response.ReasonPhrase);
+        }
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private async Task<Guid?> GetMyUserIdAsync()

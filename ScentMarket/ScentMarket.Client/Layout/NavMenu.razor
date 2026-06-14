@@ -9,6 +9,11 @@
         <NavLink class="nav-link" href="my-offers">My Offers</NavLink>
         <NavLink class="nav-link" href="transactions">Transactions</NavLink>
         <NavLink class="nav-link" href="account">Account</NavLink>
+        <AuthorizeView Roles="Admin">
+            <Authorized Context="adminCtx">
+                <NavLink class="nav-link" href="admin" style="color: var(--gold) !important; border-color: rgba(180, 140, 60, 0.3);">Admin</NavLink>
+            </Authorized>
+        </AuthorizeView>
     </div>
 
     <div class="nav-user">

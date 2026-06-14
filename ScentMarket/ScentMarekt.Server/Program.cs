@@ -631,4 +631,79 @@ app.MapPost("/api/offers", async (ClaimsPrincipal user, AppDbContext db, CreateO
     .WithTags("Offers")
     .RequireAuthorization();
 
+// ── Admin Users ──────────────────────────────────────────────────────────────
+
+app.MapGet("/api/users", async (AppDbContext db) =>
+{
+    var users = await db.Users
+        .AsNoTracking()
+        .OrderByDescending(u => u.CreatedAt)
+        .Select(u => new AdminUserDto
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Email = u.Email,
+            Role = u.Role.ToString(),
+            CreatedAt = u.CreatedAt
+        })
+        .ToListAsync();
+
+    return Results.Ok(users);
+})
+    .WithName("GetAllUsers")
+    .WithTags("Admin")
+    .RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+app.MapPost("/api/users", async (AdminCreateUserRequest request, AppDbContext db) =>
+{
+    if (await db.Users.AnyAsync(u => u.Username == request.Username || u.Email == request.Email))
+        return Results.Conflict(new { message = "Username or Email already taken." });
+
+    if (!Enum.TryParse<UserRole>(request.Role, true, out var roleEnum))
+        return Results.BadRequest(new { message = "Invalid role." });
+
+    var user = new User
+    {
+        Id = Guid.NewGuid(),
+        Username = request.Username,
+        Email = request.Email,
+        PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+        Role = roleEnum,
+        CreatedAt = DateTime.UtcNow
+    };
+
+    db.Users.Add(user);
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new AdminUserDto
+    {
+        Id = user.Id,
+        Username = user.Username,
+        Email = user.Email,
+        Role = user.Role.ToString(),
+        CreatedAt = user.CreatedAt
+    });
+})
+    .WithName("AdminCreateUser")
+    .WithTags("Admin")
+    .RequireAuthorization(policy => policy.RequireRole("Admin"));
+
+app.MapDelete("/api/users/{id:guid}", async (Guid id, ClaimsPrincipal userPrincipal, AppDbContext db) =>
+{
+    var callerId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    if (id == callerId)
+        return Results.BadRequest(new { message = "You cannot delete yourself." });
+
+    var user = await db.Users.FindAsync(id);
+    if (user is null) return Results.NotFound();
+
+    db.Users.Remove(user);
+    await db.SaveChangesAsync();
+
+    return Results.Ok();
+})
+    .WithName("DeleteUser")
+    .WithTags("Admin")
+    .RequireAuthorization(policy => policy.RequireRole("Admin"));
+
 app.Run();
