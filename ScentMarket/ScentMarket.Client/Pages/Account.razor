@@ -1,0 +1,189 @@
+@page "/account"
+@attribute [Authorize]
+@inject ApiClient ApiClient
+
+<PageTitle>Account Details — ScentMarket</PageTitle>
+
+<div class="account-page">
+    <div class="page-header">
+        <h1>Account Details</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p>Loading profile…</p>
+        </div>
+    }
+    else if (_profile is null)
+    {
+        <div class="error-banner">Could not load profile.</div>
+    }
+    else
+    {
+        <div class="account-content">
+            <!-- Read-only details -->
+            <div class="account-section read-only">
+                <h2>Overview</h2>
+                <div class="info-grid">
+                    <div class="info-group">
+                        <span class="info-label">Username</span>
+                        <span class="info-value">@_profile.Username</span>
+                    </div>
+                    <div class="info-group">
+                        <span class="info-label">Role</span>
+                        <span class="info-value role-badge @_profile.Role.ToLower()">@_profile.Role</span>
+                    </div>
+                    <div class="info-group">
+                        <span class="info-label">Member Since</span>
+                        <span class="info-value">@_profile.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Details Form -->
+            <div class="account-section">
+                <h2>Contact Information</h2>
+                <p class="section-desc">Buyers will see these details when they purchase your decants.</p>
+                
+                @if (!string.IsNullOrEmpty(_profileError))
+                {
+                    <div class="error-banner">@_profileError</div>
+                }
+                @if (_profileSuccess)
+                {
+                    <div class="success-banner">Contact details updated successfully.</div>
+                }
+
+                <EditForm Model="_profileModel" OnValidSubmit="UpdateProfile">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <InputText @bind-Value="_profileModel.Email" class="form-input" placeholder="e.g. you@example.com" />
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <InputText @bind-Value="_profileModel.Phone" class="form-input" placeholder="e.g. +1 234 567 890" />
+                        </div>
+                        <div class="form-group">
+                            <label>WhatsApp</label>
+                            <InputText @bind-Value="_profileModel.WhatsApp" class="form-input" placeholder="WhatsApp number" />
+                        </div>
+                        <div class="form-group">
+                            <label>Messenger</label>
+                            <InputText @bind-Value="_profileModel.Messenger" class="form-input" placeholder="Messenger username or link" />
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary mt-3" disabled="@_savingProfile">
+                        @if (_savingProfile) { <span class="spinner-small"></span> } else { <span>Save Contact Info</span> }
+                    </button>
+                </EditForm>
+            </div>
+
+            <!-- Password Form -->
+            <div class="account-section">
+                <h2>Change Password</h2>
+                
+                @if (!string.IsNullOrEmpty(_passwordError))
+                {
+                    <div class="error-banner">@_passwordError</div>
+                }
+                @if (_passwordSuccess)
+                {
+                    <div class="success-banner">Password updated successfully.</div>
+                }
+
+                <EditForm Model="_passwordModel" OnValidSubmit="UpdatePassword">
+                    <div class="form-group">
+                        <label>Current Password <span class="req">*</span></label>
+                        <InputText @bind-Value="_passwordModel.CurrentPassword" type="password" class="form-input" required />
+                    </div>
+                    <div class="form-group">
+                        <label>New Password <span class="req">*</span></label>
+                        <InputText @bind-Value="_passwordModel.NewPassword" type="password" class="form-input" required />
+                    </div>
+                    
+                    <button type="submit" class="btn-secondary mt-3" disabled="@_savingPassword">
+                        @if (_savingPassword) { <span class="spinner-small"></span> } else { <span>Update Password</span> }
+                    </button>
+                </EditForm>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private UserProfileDto? _profile;
+    
+    private UpdateProfileRequest _profileModel = new();
+    private bool _savingProfile;
+    private string? _profileError;
+    private bool _profileSuccess;
+
+    private UpdatePasswordRequest _passwordModel = new();
+    private bool _savingPassword;
+    private string? _passwordError;
+    private bool _passwordSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        _profile = await ApiClient.GetProfileAsync();
+        
+        if (_profile is not null)
+        {
+            _profileModel = new UpdateProfileRequest
+            {
+                Email = _profile.Email,
+                Phone = _profile.Phone,
+                WhatsApp = _profile.WhatsApp,
+                Messenger = _profile.Messenger
+            };
+        }
+        _loading = false;
+    }
+
+    private async Task UpdateProfile()
+    {
+        _savingProfile = true;
+        _profileError = null;
+        _profileSuccess = false;
+
+        var success = await ApiClient.UpdateProfileAsync(_profileModel);
+        if (success)
+        {
+            _profileSuccess = true;
+            // update local state
+            _profile = await ApiClient.GetProfileAsync();
+        }
+        else
+        {
+            _profileError = "Failed to update profile. Please try again.";
+        }
+        
+        _savingProfile = false;
+    }
+
+    private async Task UpdatePassword()
+    {
+        _savingPassword = true;
+        _passwordError = null;
+        _passwordSuccess = false;
+
+        var result = await ApiClient.UpdatePasswordAsync(_passwordModel);
+        if (result.success)
+        {
+            _passwordSuccess = true;
+            _passwordModel = new UpdatePasswordRequest(); // reset form
+        }
+        else
+        {
+            _passwordError = result.error ?? "Failed to update password.";
+        }
+        
+        _savingPassword = false;
+    }
+}

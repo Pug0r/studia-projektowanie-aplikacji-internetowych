@@ -15,6 +15,6 @@ public sealed class TransactionDto
     public decimal TotalPrice { get; init; }
     public TransactionStatus Status { get; init; }
     public DateTime CreatedAt { get; init; }
-    public ContactInfoDto SellerContactInfo { get; init; } = new();
-    public ContactInfoDto BuyerContactInfo { get; init; } = new();
+    public ContactInfoDto SellerContactInfo { get; set; } = new();
+    public ContactInfoDto BuyerContactInfo { get; set; } = new();
 }

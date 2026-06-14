@@ -12,7 +12,32 @@ var builder = WebApplication.CreateBuilder(args);
 // ── Services ────────────────────────────────────────────────────────────────
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Paste your JWT token here. (Do not type 'Bearer', it will be added automatically.)"
+    });
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -158,6 +183,66 @@ app.MapGet("/api/perfumes/{id:guid}", async (Guid id, AppDbContext db) =>
 })
     .WithName("GetPerfumeDetail")
     .RequireAuthorization();
+
+app.MapGet("/api/users/me", async (ClaimsPrincipal userPrincipal, AppDbContext db) =>
+{
+    var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    var user = await db.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == userId);
+    
+    if (user is null) return Results.NotFound();
+
+    return Results.Ok(new UserProfileDto
+    {
+        Id = user.Id,
+        Username = user.Username,
+        Email = user.Email,
+        Phone = user.Phone,
+        WhatsApp = user.WhatsApp,
+        Messenger = user.Messenger,
+        Role = user.Role.ToString(),
+        CreatedAt = user.CreatedAt
+    });
+})
+.WithName("GetProfile")
+.RequireAuthorization();
+
+app.MapPut("/api/users/me", async (UpdateProfileRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
+{
+    var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    
+    if (user is null) return Results.NotFound();
+
+    user.Email = request.Email;
+    user.Phone = request.Phone;
+    user.WhatsApp = request.WhatsApp;
+    user.Messenger = request.Messenger;
+
+    await db.SaveChangesAsync();
+    return Results.Ok();
+})
+.WithName("UpdateProfile")
+.RequireAuthorization();
+
+app.MapPut("/api/users/me/password", async (UpdatePasswordRequest request, ClaimsPrincipal userPrincipal, AppDbContext db) =>
+{
+    var userId = Guid.Parse(userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+    
+    if (user is null) return Results.NotFound();
+
+    if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+    {
+        return Results.BadRequest(new { message = "Incorrect current password." });
+    }
+
+    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+    
+    await db.SaveChangesAsync();
+    return Results.Ok();
+})
+.WithName("UpdatePassword")
+.RequireAuthorization();
 
 app.MapGet("/api/transactions", async (ClaimsPrincipal user, AppDbContext db) =>
 {

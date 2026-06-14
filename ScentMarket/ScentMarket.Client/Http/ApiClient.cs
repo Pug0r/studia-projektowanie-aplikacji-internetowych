@@ -132,6 +132,41 @@ public class ApiClient
         return response.IsSuccessStatusCode;
     }
 
+    // ── Profile ──────────────────────────────────────────────────────────────
+
+    public async Task<UserProfileDto?> GetProfileAsync()
+    {
+        await AttachTokenAsync();
+        return await _http.GetFromJsonAsync<UserProfileDto>("api/users/me");
+    }
+
+    public async Task<bool> UpdateProfileAsync(UpdateProfileRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PutAsJsonAsync("api/users/me", request);
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<(bool success, string? error)> UpdatePasswordAsync(UpdatePasswordRequest request)
+    {
+        await AttachTokenAsync();
+        var response = await _http.PutAsJsonAsync("api/users/me/password", request);
+        
+        if (response.IsSuccessStatusCode)
+            return (true, null);
+            
+        try
+        {
+            var problem = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+            var msg = problem.TryGetProperty("message", out var m) ? m.GetString() : response.ReasonPhrase;
+            return (false, msg);
+        }
+        catch
+        {
+            return (false, response.ReasonPhrase);
+        }
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
 

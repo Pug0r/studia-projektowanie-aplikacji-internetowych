@@ -1,6 +1,6 @@
 namespace ScentMarket.Shared;
 
-public sealed class ContactInfoDto
+public sealed class UpdateProfileRequest
 {
     public string? Email { get; set; }
     public string? Phone { get; set; }

@@ -8,7 +8,7 @@ public sealed class User
 
     public string? Email { get; set; }
 
-    public string PasswordHash { get; init; } = string.Empty;
+    public string PasswordHash { get; set; } = string.Empty;
 
     public UserRole Role { get; init; }
 
